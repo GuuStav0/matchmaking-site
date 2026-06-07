@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../models/authContext.jsx";
+import { Popup } from "../assets/actions/PopUp.jsx";
 import Header from "../assets/actions/header.jsx";
 import Footer from "../assets/actions/footer.jsx";
 import "../assets/css/rooms.css";
@@ -94,8 +96,71 @@ function RoomCard({ room, onClick, active }) {
 
 // ─── SLIDE PANEL ──────────────────────────────────────────────────────────────
 function SlidePanel({ room, onClose }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { gameId } = useParams();
   const [mounted, setMounted] = useState(false);
   const panelRef = useRef(null);
+
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState("info");
+
+  if (!room) return null;
+
+  const handleJoinRoom = async () => {
+    const profileId = user?.id || user?.profile_id;
+
+    if (!profileId) {
+      setPopupType("error");
+      setPopupMessage("Sessão inválida. Por favor, faça login novamente.");
+      setPopupOpen(true);
+      return;
+    }
+
+    if (!gameId || !room.id) {
+      setPopupType("error");
+      setPopupMessage("Dados de identificação do jogo ou da sala inválidos.");
+      setPopupOpen(true);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/group-members", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          group_id: parseInt(room.id),
+          profile_id: parseInt(profileId), // Usa a variável declarada acima
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok || data.status === "sucesso") {
+        setPopupType("success");
+        setPopupMessage("Acesso autorizado! Entrando no lobby tático...");
+        setPopupOpen(true);
+
+        // Aguarda 1.5 segundos para exibir o feedback visual do PopUp antes de redirecionar
+        setTimeout(() => {
+          setPopupOpen(false);
+          navigate(`/rooms/${gameId}/${room.id}`); // Redirecionamento seguro para RoomDetail
+        }, 1500);
+      } else {
+        setPopupType("error");
+        setPopupMessage(data.mensagem || "Erro ao tentar ingressar na sala.");
+        setPopupOpen(true);
+      }
+    } catch (error) {
+      console.error("Erro crítico na conexão:", error);
+      setPopupType("error");
+      setPopupMessage("Não foi possível conectar-se ao lobby do jogo.");
+      setPopupOpen(true);
+    }
+  };
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -267,10 +332,7 @@ function SlidePanel({ room, onClose }) {
               Esta sala está cheia no momento.
             </div>
           ) : (
-            <button
-              className="sp-join-btn"
-              onClick={() => alert(`→ POST /api/groups/${room.id}/join`)}
-            >
+            <button className="sp-join-btn" onClick={handleJoinRoom}>
               Entrar na sala
               <svg
                 width="16"
@@ -289,6 +351,12 @@ function SlidePanel({ room, onClose }) {
           )}
         </div>
       </aside>
+      <Popup
+        isOpen={popupOpen}
+        message={popupMessage}
+        type={popupType}
+        onClose={() => setPopupOpen(false)}
+      />
     </>
   );
 }
