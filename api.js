@@ -25,52 +25,50 @@ app.post("/api/login", (req, res) => {
       .json({ status: "erro", mensagem: "Email e senha são obrigatórios." });
   }
 
-  // Busca os dados do User E os dados do Profile vinculado
+  // 🌟 Query Corrigida: Vincula profiles com users usando p.user_id = u.id
   const query = `
-        SELECT 
-            u.id, 
-            u.email, 
-            u.password, 
-            p.nickname, 
-            p.avatar_url 
-        FROM users u
-        LEFT JOIN profiles p
-        ON p.id = gg.creator_id
-        WHERE u.email = ?
-    `;
+    SELECT 
+      u.id, 
+      u.email, 
+      u.password, 
+      p.id AS profile_id, -- Importante para saber qual o ID de perfil dele
+      p.nickname, 
+      p.avatar_url 
+    FROM users u
+    LEFT JOIN profiles p ON p.user_id = u.id
+    WHERE u.email = ?
+  `;
 
   db.get(query, [email], async (err, user) => {
     if (err) {
-      return res.status(500).json({ status: "erro", mensagem: err.message });
+      return res.status(500).json({ status: "erro", mensagem: "Erro interno no banco de dados." });
     }
 
-    // Se o usuário não existir
     if (!user) {
-      return res
-        .status(401)
-        .json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
+      return res.status(401).json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
     }
 
-    // Compara a senha digitada com a senha criptografada do banco
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    try {
+      // Verifica se a senha criptografada bate com a enviada
+      const match = await bcrypt.compare(password, user.password);
+      if (!match) {
+        return res.status(401).json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
+      }
 
-    if (!passwordMatch) {
-      return res
-        .status(401)
-        .json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
+      // Se deu certo, envia os dados essenciais para o Front-end salvar
+      res.json({
+        status: "sucesso",
+        dados: {
+          id: user.id,
+          profile_id: user.profile_id,
+          email: user.email,
+          nickname: user.nickname || "Jogador",
+          avatar_url: user.avatar_url
+        }
+      });
+    } catch (bcryptErr) {
+      res.status(500).json({ status: "erro", mensagem: "Erro ao processar a autenticação." });
     }
-
-    // Se deu tudo certo, retorna os dados do usuário E do perfil para o React salvar na sessão
-    res.json({
-      status: "sucesso",
-      mensagem: "Login realizado com sucesso!",
-      user: {
-        id: user.id,
-        email: user.email,
-        nickname: user.nickname,
-        avatar_url: user.avatar_url,
-      },
-    });
   });
 });
 
@@ -122,7 +120,66 @@ app.get("/api/games/:gameId", (req, res) => {
   });
 });
 
-// ─── BUSCAR APENAS AS SALAS DESSE JOGO ────────────────────────────────────
+// 1.1 GET /api/rooms/:roomId — Retorna os dados completos de uma sala e seus membros
+app.get("/api/rooms/detail/:roomId", (req, res) => {
+  const { roomId } = req.params;
+
+  // Consulta para obter os dados da sala + nome do jogo
+  const roomQuery = `
+    SELECT gg.*, g.name AS game_name, g.image_url AS game_cover
+    FROM game_groups gg
+    INNER JOIN games g ON gg.game_id = g.id
+    WHERE gg.id = ?
+  `;
+
+  db.get(roomQuery, [roomId], (err, room) => {
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
+    if (!room)
+      return res
+        .status(404)
+        .json({ status: "erro", mensagem: "Sala não encontrada." });
+
+    // Consulta secundária para buscar os membros atuais inseridos na tabela group_members
+    const membersQuery = `
+      SELECT p.id, p.nickname, p.avatar_url
+      FROM group_members gm
+      INNER JOIN profiles p ON gm.profile_id = p.id
+      WHERE gm.group_id = ?
+      ORDER BY gm.joined_at ASC
+    `;
+
+    db.all(membersQuery, [roomId], (memErr, members) => {
+      if (memErr)
+        return res
+          .status(500)
+          .json({ status: "erro", mensagem: memErr.message });
+
+      room.members = members;
+      res.json({ status: "sucesso", dados: room });
+    });
+  });
+});
+
+// 1.2 GET /api/rooms/:roomId/messages — Retorna as últimas 50 mensagens do chat
+app.get("/api/rooms/:roomId/messages", (req, res) => {
+  const { roomId } = req.params;
+  const query = `
+    SELECT rm.id, rm.content, rm.created_at, p.id AS profile_id, p.nickname, p.avatar_url
+    FROM room_messages rm
+    INNER JOIN profiles p ON rm.profile_id = p.id
+    WHERE rm.group_id = ?
+    ORDER BY rm.created_at ASC
+    LIMIT 50
+  `;
+
+  db.all(query, [roomId], (err, rows) => {
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
+    res.json({ status: "sucesso", dados: rows });
+  });
+});
+
 app.get("/api/games/:gameId/rooms", (req, res) => {
   const { gameId } = req.params;
 
@@ -234,17 +291,15 @@ app.post("/api/rooms", (req, res) => {
     ],
     function (err) {
       if (err) {
-        return res
-          .status(500)
-          .json({
-            status: "erro",
-            mensagem: "Erro ao criar sala: " + err.message,
-          });
+        return res.status(500).json({
+          status: "erro",
+          mensagem: "Erro ao criar sala: " + err.message,
+        });
       }
 
       const novaSalaId = this.lastID; // Captura o ID da sala recém-criada
 
-      // 2. 🌟 REGRA DE OURO: Insere automaticamente o criador como membro ativo da própria sala
+      // Insere automaticamente o criador como membro ativo da própria sala
       // Altere o nome das colunas se a sua tabela 'group_members' usar propriedades diferentes (ex: user_id, status)
       const queryMember = `
         INSERT INTO group_members (group_id, profile_id, joined_at) 
@@ -422,32 +477,29 @@ app.post("/api/game-groups", (req, res) => {
   });
 });
 
-// 5. Adicionar Membro em um Grupo (group_members)
-app.post("/api/group-members", (req, res) => {
-  const { group_id, profile_id, role } = req.body;
+// 1.3 POST /api/rooms/:roomId/messages — Salva uma nova mensagem no chat
+app.post("/api/rooms/:roomId/messages", (req, res) => {
+  const { roomId } = req.params;
+  const { profile_id, content } = req.body;
 
-  if (!group_id || !profile_id) {
-    return res.status(400).json({
-      status: "erro",
-      mensagem: "group_id e profile_id são obrigatórios.",
-    });
-  }
-
-  // Validação extra do CHECK constraint do SQL para role
-  const finalRole = role || "member";
-  if (!["owner", "member"].includes(finalRole)) {
+  if (!profile_id || !content || content.trim() === "") {
     return res
       .status(400)
-      .json({ status: "erro", mensagem: "role deve ser 'owner' ou 'member'." });
+      .json({
+        status: "erro",
+        mensagem: "Mensagem inválida ou sem remetente.",
+      });
   }
 
-  const query = `INSERT INTO group_members (group_id, profile_id, role) VALUES (?, ?, ?)`;
-  db.run(query, [group_id, profile_id, finalRole], function (err) {
+  const query = `
+    INSERT INTO room_messages (group_id, profile_id, content)
+    VALUES (?, ?, ?)
+  `;
+
+  db.run(query, [roomId, profile_id, content.trim()], function (err) {
     if (err)
       return res.status(500).json({ status: "erro", mensagem: err.message });
-    res
-      .status(201)
-      .json({ status: "sucesso", mensagem: "Jogador adicionado ao grupo!" });
+    res.status(201).json({ status: "sucesso", id: this.lastID });
   });
 });
 
@@ -623,26 +675,66 @@ app.put("/api/game-groups/:id", (req, res) => {
   );
 });
 
-// 6. Alterar Cargo de um Membro no Grupo (group_members)
-app.put("/api/group-members", (req, res) => {
-  const { group_id, profile_id, role } = req.body;
+// ROTA PARA UM JOGADOR ENTRAR EM UMA SALA EXISTENTE
+app.post("/api/group-members", (req, res) => {
+  const { group_id, profile_id } = req.body;
 
-  if (!group_id || !profile_id || !role) {
-    return res.status(400).json({
-      status: "erro",
-      mensagem: "group_id, profile_id e role são obrigatórios.",
-    });
+  if (!group_id || !profile_id) {
+    return res.status(400).json({ status: "erro", mensagem: "Dados insuficientes para entrar na sala." });
   }
 
-  const query = `UPDATE group_members SET role = ? WHERE group_id = ? AND profile_id = ?`;
-  db.run(query, [role, group_id, profile_id], function (err) {
-    if (err)
-      return res.status(500).json({ status: "erro", mensagem: err.message });
-    if (this.changes === 0)
-      return res
-        .status(404)
-        .json({ status: "erro", mensagem: "Membro ou grupo não encontrado." });
-    res.json({ status: "sucesso", mensagem: "Cargo do membro atualizado!" });
+  const checkAlreadyMemberQuery = `
+    SELECT group_id FROM group_members 
+    WHERE group_id = ? AND profile_id = ?
+  `;
+
+  db.get(checkAlreadyMemberQuery, [group_id, profile_id], (errCheck, existingMember) => {
+    if (errCheck) {
+      return res.status(500).json({ status: "erro", mensagem: errCheck.message });
+    }
+
+    // Se o registro já existir, deixa o jogador passar direto
+    if (existingMember) {
+      return res.json({ 
+        status: "sucesso", 
+        mensagem: "Você já é membro deste lobby, redirecionando..." 
+      });
+    }
+
+    // Se não for membro ainda, verifica se a sala tem espaço disponível antes de inserir
+    const checkSlotsQuery = `
+      SELECT gg.max_slots, COUNT(gm.profile_id) as current_members
+      FROM game_groups gg
+      LEFT JOIN group_members gm ON gg.id = gm.group_id
+      WHERE gg.id = ?
+      GROUP BY gg.id
+    `;
+
+    db.get(checkSlotsQuery, [group_id], (errSlots, roomInfo) => {
+      if (errSlots) {
+        return res.status(500).json({ status: "erro", mensagem: errSlots.message });
+      }
+      if (!roomInfo) {
+        return res.status(404).json({ status: "erro", mensagem: "Sala não encontrada." });
+      }
+
+      if (roomInfo.current_members >= roomInfo.max_slots) {
+        return res.status(400).json({ status: "erro", mensagem: "A sala atingiu o limite máximo de jogadores!" });
+      }
+
+      // Faz o INSERT com segurança
+      const insertQuery = `
+        INSERT INTO group_members (group_id, profile_id, joined_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+      `;
+
+      db.run(insertQuery, [group_id, profile_id], function (insertErr) {
+        if (insertErr) {
+          return res.status(500).json({ status: "erro", mensagem: insertErr.message });
+        }
+        res.status(201).json({ status: "sucesso", mensagem: "Entrou na sala com sucesso!" });
+      });
+    });
   });
 });
 
@@ -730,26 +822,6 @@ app.delete("/api/game-groups/:id", (req, res) => {
         .json({ status: "erro", mensagem: "Grupo não encontrado." });
     res.json({ status: "sucesso", mensagem: "Grupo removido com sucesso." });
   });
-});
-
-// 6. Remover um Membro de um Grupo / Sair do grupo (group_members)
-app.delete("/api/group-members", (req, res) => {
-  const { group_id, profile_id } = req.body;
-
-  db.run(
-    `DELETE FROM group_members WHERE group_id = ? AND profile_id = ?`,
-    [group_id, profile_id],
-    function (err) {
-      if (err)
-        return res.status(500).json({ status: "erro", mensagem: err.message });
-      if (this.changes === 0)
-        return res.status(404).json({
-          status: "erro",
-          mensagem: "Membro não encontrado neste grupo.",
-        });
-      res.json({ status: "sucesso", mensagem: "Membro removido do grupo." });
-    },
-  );
 });
 
 // GET /api/players — Lista jogadores com filtros opcionais (?game=&style=)
@@ -848,5 +920,65 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(
     `API ativa com suporte completo a CRUD em http://localhost:${PORT}`,
+  );
+});
+
+// 1.4 DELETE /api/rooms/:roomId/members/:profileId — Expulsa um membro (Apenas Dono)
+app.delete("/api/rooms/:roomId/members/:profileId", (req, res) => {
+  const { roomId, profileId } = req.params;
+  const requesterId = req.headers["x-user-id"]; // Recebe quem está pedindo para validar segurança
+
+  // Primeiro verifica quem é o criador da sala
+  db.get(
+    "SELECT creator_id FROM game_groups WHERE id = ?",
+    [roomId],
+    (err, room) => {
+      if (err)
+        return res.status(500).json({ status: "erro", mensagem: err.message });
+      if (!room)
+        return res
+          .status(404)
+          .json({ status: "erro", mensagem: "Sala não encontrada." });
+
+      if (parseInt(room.creator_id) !== parseInt(requesterId)) {
+        return res
+          .status(403)
+          .json({
+            status: "erro",
+            mensagem: "Apenas o Host da sala pode kickar membros.",
+          });
+      }
+
+      // Executa a remoção do membro na tabela de vínculo
+      db.run(
+        "DELETE FROM group_members WHERE group_id = ? AND profile_id = ?",
+        [roomId, profileId],
+        function (delErr) {
+          if (delErr)
+            return res
+              .status(500)
+              .json({ status: "erro", mensagem: delErr.message });
+          res.json({
+            status: "sucesso",
+            mensagem: "Membro expulso com sucesso da sessão.",
+          });
+        },
+      );
+    },
+  );
+});
+
+// Extra: DELETE /api/group-members — Rota genérica para sair voluntariamente da sala
+app.delete("/api/group-members", (req, res) => {
+  const { group_id, profile_id } = req.body;
+
+  db.run(
+    "DELETE FROM group_members WHERE group_id = ? AND profile_id = ?",
+    [group_id, profile_id],
+    function (err) {
+      if (err)
+        return res.status(500).json({ status: "erro", mensagem: err.message });
+      res.json({ status: "sucesso", mensagem: "Você saiu da sala." });
+    },
   );
 });

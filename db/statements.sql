@@ -1,5 +1,6 @@
 --DROP TABLE IF EXISTS group_members;
 --DROP TABLE IF EXISTS game_groups;
+--DROP TABLE IF EXISTS room_messages;
 --DROP TABLE IF EXISTS user_games;
 --DROP TABLE IF EXISTS profiles;
 --DROP TABLE IF EXISTS genres;
@@ -92,7 +93,19 @@ CREATE TABLE IF NOT EXISTS group_members (
     CONSTRAINT fk_group_members_profile FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 
--- 8. Tabela para gerenciar tokens de redefinição de senha
+-- 8. Tabela de Mensagens nas Salas (Room_Messages)
+-- Relacionamento N:1 com a tabela de Grupos (uma sala pode ter várias mensagens, mas cada mensagem pertence a uma única sala)
+CREATE TABLE IF NOT EXISTS room_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  profile_id INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES game_groups(id),
+  FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+
+-- 9. Tabela para gerenciar tokens de redefinição de senha
 -- Relacionamento 1:N com a tabela de Usuários (um usuário pode ter vários tokens, mas cada token pertence a um único usuário)
 CREATE TABLE IF NOT EXISTS password_resets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,7 +117,7 @@ CREATE TABLE IF NOT EXISTS password_resets (
     CONSTRAINT fk_password_resets_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 9. Tabela de Administradores (Admin)
+-- 10. Tabela de Administradores (Admin)
 -- Relacionamento 1:1 com a tabela de Usuários para diferenciar de 'profiles'
 CREATE TABLE IF NOT EXISTS admins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
