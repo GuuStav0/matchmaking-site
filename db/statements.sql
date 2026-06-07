@@ -126,30 +126,3 @@ INSERT INTO game_groups (
     1, 1, 'Pro Players Only', 'Foco em subir elo, preciso de suporte e jungle sérios.', 5, 
     'Competitivo', 'Ouro', 'Diamante', 'Noite', 'PT-BR', 1, 'Tryhard, Sérias, Discord'
 );
-
--- 2. Sala Casual com 2 membros de 4 slots
-INSERT INTO game_groups (
-    game_id, creator_id, name, bio, max_slots, 
-    game_style, rank_min, rank_max, schedule, language, mic_required, tags
-) VALUES (
-    1, 2, 'Jogar pra relaxar', 'Apenas diversão, sem xingamentos.', 4, 
-    'Casual', 'Ferro', 'Prata', 'Tarde', 'PT-BR', 0, 'Chill, Fim de semana'
-);
-
--- 3. Sala Cheia (para testar o status de sala cheia)
-INSERT INTO game_groups (
-    game_id, creator_id, name, bio, max_slots, 
-    game_style, rank_min, rank_max, schedule, language, mic_required, tags
-) VALUES (
-    1, 3, 'Time Completo', 'Bora ganhar esse campeonato!', 5, 
-    'Competitivo', 'Platina', 'Desafiante', '20:00', 'PT-BR', 1, 'Torneio, Gank'
-);
-
-INSERT INTO group_members (group_id, profile_id, role) VALUES (1, 1, 'owner'), (1, 2, 'member'), (1, 3, 'member');
-
-SELECT
-  id,
-  game_id,
-  creator_id,
-  name
-FROM game_groups;
