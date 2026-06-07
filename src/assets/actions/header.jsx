@@ -60,7 +60,13 @@ export default function Header() {
         >
           Explorar
         </span>
-        <span className="nav-link">Grupos</span>
+        <span
+          className="nav-link"
+          onClick={() => navigate("/about")}
+          style={{ cursor: "pointer" }}
+        >
+          Sobre
+        </span>
         <span className="nav-link">Ranking</span>
 
         {/* CONDIÇÃO DE SESSÃO */}
