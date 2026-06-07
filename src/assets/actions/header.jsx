@@ -64,6 +64,7 @@ export default function Header() {
         <div className="about-nav-menu">
           <span className="nav-link" onClick={() => navigate("/games")} style={{ cursor: "pointer" }}>Explorar</span>
           <span className="nav-link" style={{ cursor: "pointer" }}>Grupos</span>
+          <span className="nav-link" onClick={() => navigate("/players")} style={{ cursor: "pointer" }}>Jogadores</span>
           <span className="nav-link" style={{ cursor: "pointer" }}>Ranking</span>
 
           {logado ? (
@@ -92,6 +93,7 @@ export default function Header() {
                     <p className="dropdown-email">{user?.email}</p>
                   </div>
                   <hr className="dropdown-divider" />
+                  <button onClick={() => { navigate("/dashboard"); setDropdownAberto(false); }} className="dropdown-item">Home</button>
                   <button onClick={() => { navigate("/perfil"); setDropdownAberto(false); }} className="dropdown-item">Meu Perfil</button>
                   <button onClick={() => { navigate("/meus-jogos"); setDropdownAberto(false); }} className="dropdown-item">Meus Jogos</button>
                   <button onClick={handleLogout} className="dropdown-item logout-btn">Sair (Sign Out)</button>
