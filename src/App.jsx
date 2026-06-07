@@ -1,3 +1,4 @@
+import ProfileSetup from "./views/profile.jsx";
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AboutUs from "./views/about";
@@ -59,6 +60,15 @@ export default function App() {
             element={
               <RotaPrivada>
                 <GamesDirectory />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/perfil"
+            element={
+              <RotaPrivada>
+                <ProfileSetup />
               </RotaPrivada>
             }
           />
