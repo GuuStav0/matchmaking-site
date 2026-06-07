@@ -432,7 +432,7 @@ export default function RoomsPage() {
           </div>
           <button
             className="rooms-hero__create-btn"
-            onClick={() => alert("→ navigate('/rooms/create')")}
+            onClick={() => navigate(`/rooms/${gameId}/create`)}
           >
             + Criar sala
           </button>

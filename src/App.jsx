@@ -10,6 +10,7 @@ import AuthScreen from "./views/auth";
 import GamesDirectory from "./views/games";
 import { AuthProvider, useAuth } from "./models/authContext.jsx";
 import RoomsPage from "./views/rooms.jsx";
+import CreateRoom from "./views/createRoom.jsx";
 // ── Sprint 3 ─────────────────────────────────────────────────────────────────
 import ResetPassword from "./views/resetPassword.jsx";
 
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/games" element={<GamesDirectory />} />
           <Route path="/auth" element={<RotaPublica><AuthScreen /></RotaPublica>} />
           <Route path="/rooms/:gameId" element={<RotaPrivada><RoomsPage /></RotaPrivada>} />
+          <Route path="/rooms/:gameId/create"element={<RotaPrivada><CreateRoom /></RotaPrivada>}/>          
           <Route path="/perfil" element={<RotaPrivada><ProfileSetup /></RotaPrivada>} />
           <Route path="/meus-jogos" element={<RotaPrivada><GameSetup /></RotaPrivada>} />
           <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
