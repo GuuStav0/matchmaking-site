@@ -119,6 +119,15 @@ export default function Header() {
                   Meu Perfil
                 </button>
                 <button
+                  onClick={() => {
+                    navigate("/meus-jogos");
+                    setDropdownAberto(false);
+                  }}
+                  className="dropdown-item"
+                >
+                  Meus Jogos
+                </button>
+                <button
                   onClick={handleLogout}
                   className="dropdown-item logout-btn"
                 >

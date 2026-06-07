@@ -1,3 +1,4 @@
+import GameSetup from "./views/gameSetup.jsx";
 import ProfileSetup from "./views/profile.jsx";
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -69,6 +70,15 @@ export default function App() {
             element={
               <RotaPrivada>
                 <ProfileSetup />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/meus-jogos"
+            element={
+              <RotaPrivada>
+                <GameSetup />
               </RotaPrivada>
             }
           />
