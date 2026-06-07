@@ -1,0 +1,21 @@
+# Dependências do Node (Instaladas via npm)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ficheiro físico do Banco de Dados SQLite local
+# (Evita enviar os dados de teste locais para o GitHub)
+db/database.db
+*.db
+*.db-journal
+*.db-wal
+
+# Variáveis de Ambiente / Segredos (Caso uses .env no futuro)
+.env
+.env.local
+
+# Ficheiros do Sistema Operativo e IDEs
+.DS_Store
+.vscode/
+.idea/
