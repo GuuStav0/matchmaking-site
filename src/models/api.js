@@ -1,13 +1,16 @@
-// src/api.js
+// src/models/api.js
 // Ponto de entrada da API Matchmaking.
 // Inicia o banco e registra todas as rotas.
 
 import express from "express";
 import cors    from "cors";
 import { initDatabase, db } from "./database.js";
-import gamesRouter          from "./routes/games.routes.js";
-import usersRouter          from "./routes/users.routes.js";
+import gamesRouter           from "./routes/games.routes.js";
+import usersRouter           from "./routes/users.routes.js";
 import authRouter, { handlerLogin } from "./routes/auth.routes.js";
+// ── Sprint 2 ─────────────────────────────────────────────────────────────────
+import profilesRouter        from "./routes/profiles.routes.js";
+import playersRouter         from "./routes/players.routes.js";
 
 const app  = express();
 const PORT = process.env.PORT ?? 3000;
@@ -44,6 +47,14 @@ app.get("/api/listagem/users", (_req, res) => {
   });
 });
 
+// ── Rotas da Sprint 2 ─────────────────────────────────────────────────────────
+//  RF01       – Edição de perfil (PUT /api/profiles/:id)
+//  GET        – Consulta perfil público
+app.use("/api/profiles", profilesRouter);
+
+//  RF05–RF10  – Listagem e filtros de jogadores (GET /api/players)
+app.use("/api/players",  playersRouter);
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) =>
   res.json({ status: "ok", timestamp: new Date().toISOString() })
@@ -62,7 +73,8 @@ initDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`\n🚀  API Matchmaking → http://localhost:${PORT}`);
-      console.log("─".repeat(48));
+      console.log("─".repeat(52));
+      // Sprint 1
       console.log("  GET    /api/health");
       console.log("  GET    /api/games");
       console.log("  POST   /api/users        (cadastro)");
@@ -73,7 +85,13 @@ initDatabase()
       console.log("  POST   /api/auth/login");
       console.log("  POST   /api/auth/register");
       console.log("  POST   /api/auth/logout  [auth]");
-      console.log("─".repeat(48) + "\n");
+      // Sprint 2
+      console.log("─".repeat(52));
+      console.log("  GET    /api/profiles/:id");
+      console.log("  PUT    /api/profiles/:id [auth, owner]");
+      console.log("  GET    /api/players      ?game=&style=&rank=&hour=&page=&limit=");
+      console.log("  GET    /api/players/:id");
+      console.log("─".repeat(52) + "\n");
     });
   })
   .catch((err) => {

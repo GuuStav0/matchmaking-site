@@ -1,0 +1,190 @@
+.pc-card {
+  --accent: #7c3aed;
+  --accent-glow: rgba(124, 58, 237, 0.25);
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --label: #94a3b8;
+  --card-bg: rgba(15, 15, 24, 0.92);
+  --card-border: rgba(255, 255, 255, 0.08);
+
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.pc-card:hover {
+  border-color: rgba(124, 58, 237, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Stripe topo ── */
+.pc-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.pc-stripe--competitive {
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+}
+
+.pc-stripe--casual {
+  background: linear-gradient(90deg, #0ea5e9, #22d3ee);
+}
+
+/* ── Header: avatar + info ── */
+.pc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pc-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pc-avatar-img,
+.pc-avatar-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.pc-avatar-img {
+  object-fit: cover;
+}
+
+.pc-avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+}
+
+.pc-avatar-placeholder--competitive {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+}
+
+.pc-avatar-placeholder--casual {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+}
+
+.pc-avatar-placeholder:not(.pc-avatar-placeholder--competitive):not(.pc-avatar-placeholder--casual) {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+}
+
+.pc-online-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #0f0f1a;
+}
+
+.pc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pc-nickname {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc-game {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Bio ── */
+.pc-bio {
+  font-size: 0.8rem;
+  color: var(--label);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Tags ── */
+.pc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pc-tag {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.pc-tag--rank {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.pc-tag--style {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--label);
+}
+
+.pc-tag--competitive {
+  background: rgba(124, 58, 237, 0.15);
+  color: #c084fc;
+}
+
+.pc-tag--casual {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+}
+
+.pc-tag--schedule {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+}
+
+/* ── Botão ── */
+.pc-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.08);
+  color: #c084fc;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pc-btn:hover {
+  background: rgba(124, 58, 237, 0.18);
+  border-color: rgba(124, 58, 237, 0.5);
+}
