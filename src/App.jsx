@@ -8,6 +8,7 @@ import AboutUs from "./views/about";
 import AuthScreen from "./views/auth";
 import GamesDirectory from "./views/games";
 import { AuthProvider, useAuth } from "./models/authContext.jsx";
+import RoomsPage from "./views/rooms.jsx";
 
 // Protege a página de jogos. Se não estiver logado, chuta de volta para a tela de autenticação (/auth)
 function RotaPrivada({ children }) {
@@ -48,6 +49,9 @@ export default function App() {
         <Routes>
           {/* Rota Institucional / Landing Page: Livre para qualquer um acessar */}
           <Route path="/" element={<AboutUs />} />
+          
+          {/* Rota de Jogos: Livre para qualquer um acessar */}
+          <Route path="/games" element={<GamesDirectory />} />
 
           {/* Rota de Autenticação: Protegida para usuários já logados não entrarem de novo */}
           <Route
@@ -59,10 +63,10 @@ export default function App() {
             }
           />
           <Route
-            path="/games"
+            path="/rooms/:gameId"
             element={
               <RotaPrivada>
-                <GamesDirectory />
+                <RoomsPage />
               </RotaPrivada>
             }
           />
