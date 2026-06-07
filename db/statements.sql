@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS games (
     name VARCHAR(100) UNIQUE NOT NULL,
     genre_id INT NOT NULL,
     image_url VARCHAR(255) DEFAULT NULL,
+    ranks_tags TEXT DEFAULT NULL, -- Armazena os ranks/elos disponíveis para o jogo (ex: "Bronze, Prata, Ouro")
+    game_style INTEGER DEFAULT 3, -- 1: Casual, 2: Competitivo, 3: Ambos
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_game_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE RESTRICT
 );
