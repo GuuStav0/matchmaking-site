@@ -1,3 +1,4 @@
+import NotFound from "./views/NotFound.jsx";
 import Dashboard from "./views/dashboard.jsx";
 import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
@@ -108,7 +109,7 @@ export default function App() {
           />
 
           {/* Rota de segurança: digitar qualquer endereço inexistente, manda para a Home (Substituir por pagina 404 personalizada) */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
