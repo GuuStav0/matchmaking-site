@@ -1,4 +1,4 @@
-// App.jsx — Sprint 3: adiciona rota /reset-password
+// App.jsx - Limpo e sem duplicatas
 import Dashboard from "./views/dashboard.jsx";
 import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
@@ -40,8 +40,6 @@ export default function App() {
           <Route path="/meus-jogos" element={<RotaPrivada><GameSetup /></RotaPrivada>} />
           <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
           <Route path="/dashboard" element={<RotaPrivada><Dashboard /></RotaPrivada>} />
-          {/* Sprint 3 — link enviado por e-mail, acesso público (sem conta logada) */}
-          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
