@@ -2,18 +2,66 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../assets/actions/header";
 import Footer from "../assets/actions/footer";
-import '../assets/css/about.css';
+import "../assets/css/about.css";
 
 const PLAYERS = [
-  { id: 1, name: "GhostReaper", game: "Valorant", rank: "Diamante", style: "Competitivo", status: "online" },
-  { id: 2, name: "LunaStrike", game: "League of Legends", rank: "Platina", style: "Casual", status: "online" },
-  { id: 3, name: "IronVeil", game: "CS2", rank: "Global Elite", style: "Competitivo", status: "away" },
-  { id: 4, name: "SkyWarden", game: "Valorant", rank: "Imortal", style: "Competitivo", status: "online" },
-  { id: 5, name: "NovaPulse", game: "Apex Legends", rank: "Predador", style: "Casual", status: "online" },
+  {
+    id: 1,
+    name: "GhostReaper",
+    game: "Valorant",
+    rank: "Diamante",
+    style: "Competitivo",
+    status: "online",
+  },
+  {
+    id: 2,
+    name: "LunaStrike",
+    game: "League of Legends",
+    rank: "Platina",
+    style: "Casual",
+    status: "online",
+  },
+  {
+    id: 3,
+    name: "IronVeil",
+    game: "CS2",
+    rank: "Global Elite",
+    style: "Competitivo",
+    status: "away",
+  },
+  {
+    id: 4,
+    name: "SkyWarden",
+    game: "Valorant",
+    rank: "Imortal",
+    style: "Competitivo",
+    status: "online",
+  },
+  {
+    id: 5,
+    name: "NovaPulse",
+    game: "Apex Legends",
+    rank: "Predador",
+    style: "Casual",
+    status: "online",
+  },
 ];
 
-const TAGS = ["Competitivo", "Casual", "Sem tilt", "Com voz", "Noturno", "Focado em rank"];
-const GAMES = ["Valorant", "League of Legends", "CS2", "Apex Legends", "R6 Siege"];
+const TAGS = [
+  "Competitivo",
+  "Casual",
+  "Sem tilt",
+  "Com voz",
+  "Noturno",
+  "Focado em rank",
+];
+const GAMES = [
+  "Valorant",
+  "League of Legends",
+  "CS2",
+  "Apex Legends",
+  "R6 Siege",
+];
 
 function StatusDot({ status }) {
   const colors = { online: "#22c55e", away: "#f59e0b", offline: "#6b7280" };
@@ -39,12 +87,16 @@ function PlayerCard({ player, delay }) {
       className="player-card"
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(16px)"
+        transform: visible ? "translateY(0)" : "translateY(16px)",
       }}
     >
-      <div className={`player-card-stripe ${isCompetitive ? "competitive" : "casual"}`} />
+      <div
+        className={`player-card-stripe ${isCompetitive ? "competitive" : "casual"}`}
+      />
       <div className="player-card-header">
-        <div className={`player-card-avatar ${isCompetitive ? "competitive" : "casual"}`}>
+        <div
+          className={`player-card-avatar ${isCompetitive ? "competitive" : "casual"}`}
+        >
           {player.name[0]}
         </div>
         <div className="player-card-info">
@@ -87,7 +139,7 @@ export default function AboutUs() {
 
   const navAuth = () => {
     navigate("/auth");
-  }
+  };
 
   useEffect(() => {
     let angle = 0;
@@ -111,12 +163,25 @@ export default function AboutUs() {
     <div className="about-page-container">
       {/* Background animado permanece aqui por ser exclusivo desta seção */}
       <div className="about-bg-layer">
-        <div className="about-glow-primary" style={{ left: `${glowPos.x}%`, top: `${glowPos.y}%` }} />
+        <div
+          className="about-glow-primary"
+          style={{ left: `${glowPos.x}%`, top: `${glowPos.y}%` }}
+        />
         <div className="about-glow-secondary" />
         <svg width="100%" height="100%" className="about-grid-svg">
           <defs>
-            <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
-              <path d="M 48 0 L 0 0 0 48" fill="none" stroke="white" strokeWidth="0.5" />
+            <pattern
+              id="grid"
+              width="48"
+              height="48"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 48 0 L 0 0 0 48"
+                fill="none"
+                stroke="white"
+                strokeWidth="0.5"
+              />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -133,15 +198,29 @@ export default function AboutUs() {
             Plataforma de Matchmaking
           </div>
           <h1 className="hero-title">
-            Encontre seu <span className="hero-title-gradient">time ideal.</span><br />Jogue no seu nível.
+            Encontre seu{" "}
+            <span className="hero-title-gradient">time ideal.</span>
+            <br />
+            Jogue no seu nível.
           </h1>
           <p className="hero-description">
-            Chega de Solo Queue frustrante. O Matchup conecta jogadores por perfil de jogo,
-            objetivos e disponibilidade de horário — formando equipes que realmente funcionam.
+            Chega de Solo Queue frustrante. O Matchup conecta jogadores por
+            perfil de jogo, objetivos e disponibilidade de horário — formando
+            equipes que realmente funcionam.
           </p>
           <div className="hero-actions">
-            <button className="cta-primary">Criar perfil gratuito</button>
-            <button className="cta-secondary">Ver jogadores →</button>
+            <button 
+              className="cta-primary"
+              onClick={navAuth}
+            >
+              Criar perfil gratuito
+            </button>
+            <button 
+              className="cta-secondary"
+              onClick={() => navigate("/games")}
+            >
+              Explorar jogos →
+            </button>
           </div>
           <div className="hero-stats-container">
             {[
@@ -171,14 +250,33 @@ export default function AboutUs() {
       <section className="features-section">
         <div className="section-header-centered">
           <h2>Por que o Matchup é diferente?</h2>
-          <p>Sistemas nativos dos jogos medem apenas MMR. Nós medimos compatibilidade real.</p>
+          <p>
+            Sistemas nativos dos jogos medem apenas MMR. Nós medimos
+            compatibilidade real.
+          </p>
         </div>
         <div className="features-grid">
           {[
-            { icon: "🎯", title: "Filtros inteligentes", desc: "Filtre por jogo, rank, horário e estilo. Encontre parceiros que combinam com você de verdade." },
-            { icon: "🛡️", title: "Ambiente sem toxicidade", desc: "Grupos fechados eliminam comportamento antidesportivo e criam canais de comunicação eficientes." },
-            { icon: "👥", title: "Grupos pre-made", desc: "Saia da Solo Queue e forme equipes estáveis com sinergia estratégica desde o começo." },
-            { icon: "📊", title: "Perfil multidimensional", desc: "Cadastre múltiplos títulos, estilos de jogo e objetivos — não somos só mais um ranking de MMR." },
+            {
+              icon: "🎯",
+              title: "Filtros inteligentes",
+              desc: "Filtre por jogo, rank, horário e estilo. Encontre parceiros que combinam com você de verdade.",
+            },
+            {
+              icon: "🛡️",
+              title: "Ambiente sem toxicidade",
+              desc: "Grupos fechados eliminam comportamento antidesportivo e criam canais de comunicação eficientes.",
+            },
+            {
+              icon: "👥",
+              title: "Grupos pre-made",
+              desc: "Saia da Solo Queue e forme equipes estáveis com sinergia estratégica desde o começo.",
+            },
+            {
+              icon: "📊",
+              title: "Perfil multidimensional",
+              desc: "Cadastre múltiplos títulos, estilos de jogo e objetivos — não somos só mais um ranking de MMR.",
+            },
           ].map((f) => (
             <div key={f.title} className="stat-card">
               <div className="stat-card-icon">{f.icon}</div>
@@ -201,7 +299,13 @@ export default function AboutUs() {
               <div className="filter-group-title">Jogo</div>
               <div className="filter-buttons-list">
                 {["Todos", ...GAMES].map((g) => (
-                  <button key={g} className={`pill-btn ${selectedGame === g ? "active" : ""}`} onClick={() => setSelectedGame(g)}>{g}</button>
+                  <button
+                    key={g}
+                    className={`pill-btn ${selectedGame === g ? "active" : ""}`}
+                    onClick={() => setSelectedGame(g)}
+                  >
+                    {g}
+                  </button>
                 ))}
               </div>
             </div>
@@ -209,16 +313,26 @@ export default function AboutUs() {
               <div className="filter-group-title">Estilo</div>
               <div className="filter-buttons-list">
                 {["Todos", "Competitivo", "Casual"].map((s) => (
-                  <button key={s} className={`pill-btn ${selectedStyle === s ? "active" : ""}`} onClick={() => setSelectedStyle(s)}>{s}</button>
+                  <button
+                    key={s}
+                    className={`pill-btn ${selectedStyle === s ? "active" : ""}`}
+                    onClick={() => setSelectedStyle(s)}
+                  >
+                    {s}
+                  </button>
                 ))}
               </div>
             </div>
           </div>
           <div className="demo-results-grid">
             {filtered.length > 0 ? (
-              filtered.map((p, i) => <PlayerCard key={p.id} player={p} delay={i * 80} />)
+              filtered.map((p, i) => (
+                <PlayerCard key={p.id} player={p} delay={i * 80} />
+              ))
             ) : (
-              <div className="demo-empty-state">Nenhum jogador encontrado com esses filtros.</div>
+              <div className="demo-empty-state">
+                Nenhum jogador encontrado com esses filtros.
+              </div>
             )}
           </div>
         </div>
@@ -228,7 +342,9 @@ export default function AboutUs() {
       <section className="tags-section">
         <div className="tags-list-wrapper">
           {TAGS.map((tag) => (
-            <span key={tag} className="hash-tag-badge">#{tag}</span>
+            <span key={tag} className="hash-tag-badge">
+              #{tag}
+            </span>
           ))}
         </div>
       </section>
@@ -238,8 +354,15 @@ export default function AboutUs() {
           <div className="final-cta-glow" />
           <div className="final-cta-content">
             <h2>Pronto para sair da Solo Queue?</h2>
-            <p>Crie seu perfil, defina seus critérios e encontre parceiros que elevam seu jogo.</p>
-            <button onClick={navAuth} className="cta-primary" style={{ padding: "16px 40px", fontSize: 16 }}>
+            <p>
+              Crie seu perfil, defina seus critérios e encontre parceiros que
+              elevam seu jogo.
+            </p>
+            <button
+              onClick={navAuth}
+              className="cta-primary"
+              style={{ padding: "16px 40px", fontSize: 16 }}
+            >
               Criar conta gratuita ⚡
             </button>
           </div>
