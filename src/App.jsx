@@ -1,4 +1,4 @@
-// App.jsx - Limpo e sem duplicatas
+import NotFound from "./views/NotFound.jsx";
 import Dashboard from "./views/dashboard.jsx";
 import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
@@ -32,13 +32,63 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AboutUs />} />
           <Route path="/games" element={<GamesDirectory />} />
-          <Route path="/auth" element={<RotaPublica><AuthScreen /></RotaPublica>} />
-          <Route path="/rooms/:gameId" element={<RotaPrivada><RoomsPage /></RotaPrivada>} />
-          <Route path="/perfil" element={<RotaPrivada><ProfileSetup /></RotaPrivada>} />
-          <Route path="/meus-jogos" element={<RotaPrivada><GameSetup /></RotaPrivada>} />
-          <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
-          <Route path="/dashboard" element={<RotaPrivada><Dashboard /></RotaPrivada>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+
+          {/* Rota de Autenticação: Protegida para usuários já logados não entrarem de novo */}
+          <Route
+            path="/auth"
+            element={
+              <RotaPublica>
+                <AuthScreen />
+              </RotaPublica>
+            }
+          />
+          <Route
+            path="/rooms/:gameId"
+            element={
+              <RotaPrivada>
+                <RoomsPage />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/perfil"
+            element={
+              <RotaPrivada>
+                <ProfileSetup />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/meus-jogos"
+            element={
+              <RotaPrivada>
+                <GameSetup />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/players"
+            element={
+              <RotaPrivada>
+                <Players />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <RotaPrivada>
+                <Dashboard />
+              </RotaPrivada>
+            }
+          />
+
+          {/* Rota de segurança: digitar qualquer endereço inexistente, manda para a Home (Substituir por pagina 404 personalizada) */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
