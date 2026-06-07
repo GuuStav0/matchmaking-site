@@ -1,4 +1,6 @@
 // App.jsx - Limpo e sem duplicatas
+import NotFound from "./views/NotFound.jsx";
+import PlayerProfile from "./views/PlayerProfile.jsx";
 import Dashboard from "./views/dashboard.jsx";
 import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
@@ -44,7 +46,8 @@ export default function App() {
           <Route path="/meus-jogos" element={<RotaPrivada><GameSetup /></RotaPrivada>} />
           <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
           <Route path="/dashboard" element={<RotaPrivada><Dashboard /></RotaPrivada>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/players/:id" element={<RotaPrivada><PlayerProfile /></RotaPrivada>} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
