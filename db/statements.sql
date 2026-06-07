@@ -3,7 +3,7 @@
 --DROP TABLE IF EXISTS user_games;
 --DROP TABLE IF EXISTS profiles;
 --DROP TABLE IF EXISTS genres;
-DROP TABLE IF EXISTS games;
+--DROP TABLE IF EXISTS games;
 --DROP TABLE IF EXISTS admins;
 --DROP TABLE IF EXISTS password_resets;
 
@@ -119,24 +119,3 @@ CREATE INDEX IF NOT EXISTS idx_user_games_search ON user_games(game_id, game_sty
 
 -- Otimização para buscar grupos abertos por jogo específicos
 CREATE INDEX IF NOT EXISTS idx_groups_game ON game_groups(game_id);
-
--- Garanta que a tabela existe com a estrutura correta antes de inserir
--- (Caso já tenha rodado o CREATE TABLE anterior, pode ignorar esta parte)
-
-INSERT INTO games (name, genre_id, image_url, ranks_tags, game_style) VALUES 
--- Jogos Focados em Competitivo (game_style = 2)
-('Valorant', 1, 'https://placehold.co/200x267/1a0a2e/c084fc?text=VALORANT&font=montserrat', 'Ferro,Bronze,Prata,Ouro,Platina,Diamante,Ascendente,Imortal,Radiante', 2),
-('Counter-Strike 2', 1, 'https://placehold.co/200x267/1a0a2e/c084fc?text=CS2&font=montserrat', 'Prata,Ouro Nova,Mestre Guardião,Águia,Supremo,Global Elite', 2),
-('League of Legends', 2, 'https://placehold.co/200x267/1a0a2e/c084fc?text=LOL&font=montserrat', 'Ferro,Bronze,Prata,Ouro,Platina,Esmeralda,Diamante,Mestre,Grão-Mestre,Desafiante', 2),
-('Rocket League', 3, 'https://placehold.co/200x267/1a0a2e/c084fc?text=ROCKET+LEAGUE&font=montserrat', 'Bronze,Prata,Ouro,Platina,Diamante,Campeão,Grande Campeão,Lenda Supersônica', 2),
-
--- Jogos Híbridos / Ambos os Estilos (game_style = 3)
-('Minecraft', 4, 'https://placehold.co/200x267/1a0a2e/c084fc?text=MINECRAFT&font=montserrat', 'Sobrevivência,Criativo,Hardcore,Skywars,Bedwars', 3),
-('Grand Theft Auto V / RP', 5, 'https://placehold.co/200x267/1a0a2e/c084fc?text=GTA+V+RP&font=montserrat', 'Iniciante,Morador,Criminoso,Policial,Sub-Chefe,Magnata', 3),
-('Fortnite', 1, 'https://placehold.co/200x267/1a0a2e/c084fc?text=FORTNITE&font=montserrat', 'Bronze,Prata,Ouro,Platina,Diamante,Elite,As,Irreal', 3),
-('Apex Legends', 1, 'https://placehold.co/200x267/1a0a2e/c084fc?text=APEX+LEGENDS&font=montserrat', 'Bronze,Prata,Ouro,Platina,Diamante,Mestre,Predador Apex', 3),
-
--- Jogos Focados em Casual / Coop (game_style = 1)
-('Among Us', 6, 'https://placehold.co/200x267/1a0a2e/c084fc?text=AMONG+US&font=montserrat', 'Tripulante,Impostor,Detetive', 1),
-('It Takes Two', 4, 'https://placehold.co/200x267/1a0a2e/c084fc?text=IT+TAKES+TWO&font=montserrat', 'Cody,May', 1),
-('Stardew Valley', 4, 'https://placehold.co/200x267/1a0a2e/c084fc?text=STARDEW+VALLEY&font=montserrat', 'Fazendeiro Iniciante,Trabalhador,Especialista,Mestre', 1);
