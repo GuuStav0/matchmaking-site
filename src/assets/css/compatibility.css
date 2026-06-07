@@ -1,0 +1,191 @@
+/* src/assets/css/compatibility.css
+   Sprint 3 — Ordenação por compatibilidade de perfil
+   Importar em players.jsx ao lado de players.css                              */
+
+/* ── Wrapper do card com badge posicionado ──────────────────────────────────── */
+.pc-compat-wrapper {
+  position: relative;
+}
+
+/* ── Badge de compatibilidade ───────────────────────────────────────────────── */
+.compat-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  border: 1px solid transparent;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Alta compatibilidade (≥80): verde */
+.compat-badge--high {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #4ade80;
+}
+
+/* Compatibilidade média (50–79): amarelo */
+.compat-badge--mid {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+/* Baixa compatibilidade (<50): cinza */
+.compat-badge--low {
+  background: rgba(100, 116, 139, 0.15);
+  border-color: rgba(100, 116, 139, 0.3);
+  color: #94a3b8;
+}
+
+.compat-badge__icon {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.compat-badge__score {
+  flex-shrink: 0;
+}
+
+.compat-badge__tip {
+  font-weight: 500;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+}
+
+/* ── Botão de ordenação por compatibilidade ─────────────────────────────────── */
+.filter-group--compat {
+  min-width: 200px;
+}
+
+.compat-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.compat-sort-btn:hover:not(:disabled) {
+  border-color: rgba(124, 58, 237, 0.4);
+  color: #c084fc;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.compat-sort-btn--active {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: #4ade80;
+}
+
+.compat-sort-btn--active:hover {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.6);
+  color: #4ade80;
+}
+
+.compat-sort-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.compat-sort-btn__icon {
+  font-size: 14px;
+}
+
+.compat-sort-hint {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.compat-sort-hint__link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #a855f7;
+  font-size: 11px;
+  font-family: "DM Sans", sans-serif;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ── Barra informativa quando compatibilidade está ativa ──────────────────── */
+.compat-active-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  font-family: "DM Sans", sans-serif;
+  animation: fadeUp 0.3s ease both;
+}
+
+.compat-active-bar__icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.compat-active-bar strong {
+  color: #4ade80;
+}
+
+/* ── Animação de entrada dos cards ordenados ────────────────────────────────── */
+.pc-compat-wrapper {
+  animation: fadeUp 0.25s ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsivo ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .filter-group--compat {
+    min-width: 100%;
+  }
+
+  .compat-sort-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .compat-badge__tip {
+    display: none;
+  }
+}
