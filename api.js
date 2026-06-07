@@ -716,6 +716,92 @@ app.delete("/api/group-members", (req, res) => {
   );
 });
 
+// GET /api/players — Lista jogadores com filtros opcionais (?game=&style=)
+app.get('/api/players', (req, res) => {
+  const { game, style } = req.query;
+
+  let query = `
+    SELECT DISTINCT
+      p.id,
+      p.nickname,
+      p.bio,
+      p.avatar_url,
+      p.schedule_availability,
+      ug.game_style,
+      ug.game_rank,
+      g.name AS game_name
+    FROM profiles p
+    INNER JOIN user_games ug ON p.id = ug.profile_id
+    INNER JOIN games g ON ug.game_id = g.id
+    WHERE 1=1
+  `;
+
+  const params = [];
+
+  if (game) {
+    query += ` AND g.id = ?`;
+    params.push(game);
+  }
+
+  if (style) {
+    query += ` AND ug.game_style = ?`;
+    params.push(style);
+  }
+
+  query += ` ORDER BY p.nickname ASC LIMIT 50`;
+
+  db.all(query, params, (err, rows) => {
+    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    res.json({ status: "sucesso", dados: rows });
+  });
+});
+
+// GET /api/players/:id — Perfil público completo de um jogador
+app.get('/api/players/:id', (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT
+      p.id,
+      p.nickname,
+      p.bio,
+      p.avatar_url,
+      p.schedule_availability,
+      p.created_at,
+      json_group_array(
+        json_object(
+          'game_name', g.name,
+          'game_style', ug.game_style,
+          'game_rank', ug.game_rank,
+          'image_url', g.image_url
+        )
+      ) AS games
+    FROM profiles p
+    LEFT JOIN user_games ug ON p.id = ug.profile_id
+    LEFT JOIN games g ON ug.game_id = g.id
+    WHERE p.id = ?
+    GROUP BY p.id
+  `;
+
+  db.get(query, [id], (err, row) => {
+    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    if (!row) return res.status(404).json({ status: "erro", mensagem: "Jogador não encontrado." });
+
+    row.games = JSON.parse(row.games || '[]').filter(g => g.game_name !== null);
+    res.json({ status: "sucesso", dados: row });
+  });
+});
+
+//!!!!!!!!!!!!!Error handler global — deve ficar aqui, logo antes do app.listen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+app.use((err, req, res, next) => {
+  console.error("❌ Erro não tratado:", err.stack);
+  res.status(500).json({
+    status: "erro",
+    mensagem: "Erro interno do servidor. Tente novamente.",
+    detalhe: process.env.NODE_ENV === "development" ? err.message : undefined,
+  });
+});
+
 app.listen(PORT, () => {
   console.log(
     `API ativa com suporte completo a CRUD em http://localhost:${PORT}`,
