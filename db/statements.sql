@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS group_members;
-DROP TABLE IF EXISTS game_groups;
+--DROP TABLE IF EXISTS group_members;
+--DROP TABLE IF EXISTS game_groups;
 --DROP TABLE IF EXISTS user_games;
 --DROP TABLE IF EXISTS profiles;
 --DROP TABLE IF EXISTS genres;
