@@ -11,6 +11,8 @@ import authRouter, { handlerLogin } from "./routes/auth.routes.js";
 // ── Sprint 2 ─────────────────────────────────────────────────────────────────
 import profilesRouter        from "./routes/profiles.routes.js";
 import playersRouter         from "./routes/players.routes.js";
+// ── Sprint 3 ─────────────────────────────────────────────────────────────────
+import passwordResetRouter   from "./routes/password-reset.routes.js";
 
 const app  = express();
 const PORT = process.env.PORT ?? 3000;
@@ -55,6 +57,13 @@ app.use("/api/profiles", profilesRouter);
 //  RF05–RF10  – Listagem e filtros de jogadores (GET /api/players)
 app.use("/api/players",  playersRouter);
 
+// ── Rotas da Sprint 3 ─────────────────────────────────────────────────────────
+//  Recuperação de senha por e-mail
+//  POST /api/password-resets          – cria token e simula envio
+//  POST /api/password-resets/verify   – valida token recebido por link
+//  POST /api/password-resets/reset    – aplica nova senha com token válido
+app.use("/api/password-resets", passwordResetRouter);
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) =>
   res.json({ status: "ok", timestamp: new Date().toISOString() })
@@ -91,6 +100,11 @@ initDatabase()
       console.log("  PUT    /api/profiles/:id [auth, owner]");
       console.log("  GET    /api/players      ?game=&style=&rank=&hour=&page=&limit=");
       console.log("  GET    /api/players/:id");
+      // Sprint 3
+      console.log("─".repeat(52));
+      console.log("  POST   /api/password-resets          (cria token + e-mail)");
+      console.log("  POST   /api/password-resets/verify   (valida token)");
+      console.log("  POST   /api/password-resets/reset    (aplica nova senha)");
       console.log("─".repeat(52) + "\n");
     });
   })

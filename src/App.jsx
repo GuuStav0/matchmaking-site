@@ -1,4 +1,4 @@
-import NotFound from "./views/NotFound.jsx";
+// App.jsx - Limpo e sem duplicatas
 import Dashboard from "./views/dashboard.jsx";
 import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
@@ -10,6 +10,8 @@ import AuthScreen from "./views/auth";
 import GamesDirectory from "./views/games";
 import { AuthProvider, useAuth } from "./models/authContext.jsx";
 import RoomsPage from "./views/rooms.jsx";
+// ── Sprint 3 ─────────────────────────────────────────────────────────────────
+import ResetPassword from "./views/resetPassword.jsx";
 
 function RotaPrivada({ children }) {
   const { logado, loading } = useAuth();
@@ -32,63 +34,13 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AboutUs />} />
           <Route path="/games" element={<GamesDirectory />} />
-
-          {/* Rota de Autenticação: Protegida para usuários já logados não entrarem de novo */}
-          <Route
-            path="/auth"
-            element={
-              <RotaPublica>
-                <AuthScreen />
-              </RotaPublica>
-            }
-          />
-          <Route
-            path="/rooms/:gameId"
-            element={
-              <RotaPrivada>
-                <RoomsPage />
-              </RotaPrivada>
-            }
-          />
-
-          <Route
-            path="/perfil"
-            element={
-              <RotaPrivada>
-                <ProfileSetup />
-              </RotaPrivada>
-            }
-          />
-
-          <Route
-            path="/meus-jogos"
-            element={
-              <RotaPrivada>
-                <GameSetup />
-              </RotaPrivada>
-            }
-          />
-
-          <Route
-            path="/players"
-            element={
-              <RotaPrivada>
-                <Players />
-              </RotaPrivada>
-            }
-          />
-
-          <Route
-            path="/dashboard"
-            element={
-              <RotaPrivada>
-                <Dashboard />
-              </RotaPrivada>
-            }
-          />
-
-          {/* Rota de segurança: digitar qualquer endereço inexistente, manda para a Home (Substituir por pagina 404 personalizada) */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/auth" element={<RotaPublica><AuthScreen /></RotaPublica>} />
+          <Route path="/rooms/:gameId" element={<RotaPrivada><RoomsPage /></RotaPrivada>} />
+          <Route path="/perfil" element={<RotaPrivada><ProfileSetup /></RotaPrivada>} />
+          <Route path="/meus-jogos" element={<RotaPrivada><GameSetup /></RotaPrivada>} />
+          <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
+          <Route path="/dashboard" element={<RotaPrivada><Dashboard /></RotaPrivada>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
