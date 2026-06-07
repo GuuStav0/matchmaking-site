@@ -75,21 +75,20 @@ app.post("/api/login", (req, res) => {
 });
 
 // 2. Listar todos os jogos disponíveis no catálogo (games) com contagem de salas ativas para cada jogo
-// Dentro do seu api.js (Backend)
-
-// Dentro do seu api.js (Backend)
+// Dentro do api.js (Backend)
 app.get("/api/games", (req, res) => {
   const query = `
     SELECT 
       g.id, 
       g.name, 
       g.image_url AS cover_url, 
+      g.ranks_tags,
       gn.name AS genre,
       COUNT(gg.id) AS rooms_count
     FROM games g
     INNER JOIN genres gn ON g.genre_id = gn.id
     LEFT JOIN game_groups gg ON g.id = gg.game_id
-    GROUP BY g.id, g.name, g.image_url, gn.name
+    GROUP BY g.id, g.name, g.image_url, g.ranks_tags, gn.name
   `;
 
   db.all(query, [], (err, rows) => {
@@ -198,38 +197,75 @@ app.post("/api/rooms", (req, res) => {
     tags,
   } = req.body;
 
-  const query = `
+  if (!game_id || !creator_id || !name || !bio) {
+    return res.status(400).json({
+      status: "erro",
+      mensagem:
+        "Por favor, preencha todos os campos obrigatórios (Jogo, Título e Descrição).",
+    });
+  }
+
+  const queryRoom = `
     INSERT INTO game_groups (
       game_id, creator_id, name, bio, max_slots, 
       game_style, rank_min, rank_max, schedule, language, mic_required, tags
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  // Se o front mandar as tags como Array ['A', 'B'], o .join junta em "A, B" para o banco
   const tagsString = Array.isArray(tags) ? tags.join(", ") : tags;
-
-  // Converte true/false do Front para 1/0 do SQLite
   const micValue = mic_required ? 1 : 0;
 
+  // 1. Criamos a Sala de Jogo
   db.run(
-    query,
+    queryRoom,
     [
-      game_id,
-      creator_id,
-      name,
-      bio,
-      max_slots,
-      game_style || "-",
-      rank_min || "-",
-      rank_max || "-",
-      schedule || "-",
-      language || "-",
+      parseInt(game_id),
+      parseInt(creator_id),
+      name.trim(),
+      bio.trim(),
+      parseInt(max_slots) || 4,
+      game_style || "Casual",
+      rank_min || "Livre",
+      rank_max || "Livre",
+      schedule ? schedule.trim() : "-",
+      language ? language.trim() : "Português",
       micValue,
-      tagsString,
+      tagsString ? tagsString.trim() : null,
     ],
     function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ status: "sucesso", id: this.lastID });
+      if (err) {
+        return res
+          .status(500)
+          .json({
+            status: "erro",
+            mensagem: "Erro ao criar sala: " + err.message,
+          });
+      }
+
+      const novaSalaId = this.lastID; // Captura o ID da sala recém-criada
+
+      // 2. 🌟 REGRA DE OURO: Insere automaticamente o criador como membro ativo da própria sala
+      // Altere o nome das colunas se a sua tabela 'group_members' usar propriedades diferentes (ex: user_id, status)
+      const queryMember = `
+        INSERT INTO group_members (group_id, profile_id, joined_at) 
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+      `;
+
+      db.run(queryMember, [novaSalaId, parseInt(creator_id)], (memberErr) => {
+        if (memberErr) {
+          console.error(
+            "⚠️ Falha ao colocar o criador na sala:",
+            memberErr.message,
+          );
+          // Mesmo se falhar o vínculo do membro, a sala foi gerada, mas o ideal é tratar ou retornar aviso
+        }
+
+        // Retorna sucesso informando que a sala está pronta e com o dono lá dentro
+        res.status(201).json({
+          status: "sucesso",
+          salaId: novaSalaId,
+        });
+      });
     },
   );
 });
@@ -717,7 +753,7 @@ app.delete("/api/group-members", (req, res) => {
 });
 
 // GET /api/players — Lista jogadores com filtros opcionais (?game=&style=)
-app.get('/api/players', (req, res) => {
+app.get("/api/players", (req, res) => {
   const { game, style } = req.query;
 
   let query = `
@@ -751,13 +787,14 @@ app.get('/api/players', (req, res) => {
   query += ` ORDER BY p.nickname ASC LIMIT 50`;
 
   db.all(query, params, (err, rows) => {
-    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
     res.json({ status: "sucesso", dados: rows });
   });
 });
 
 // GET /api/players/:id — Perfil público completo de um jogador
-app.get('/api/players/:id', (req, res) => {
+app.get("/api/players/:id", (req, res) => {
   const { id } = req.params;
 
   const query = `
@@ -784,10 +821,16 @@ app.get('/api/players/:id', (req, res) => {
   `;
 
   db.get(query, [id], (err, row) => {
-    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
-    if (!row) return res.status(404).json({ status: "erro", mensagem: "Jogador não encontrado." });
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
+    if (!row)
+      return res
+        .status(404)
+        .json({ status: "erro", mensagem: "Jogador não encontrado." });
 
-    row.games = JSON.parse(row.games || '[]').filter(g => g.game_name !== null);
+    row.games = JSON.parse(row.games || "[]").filter(
+      (g) => g.game_name !== null,
+    );
     res.json({ status: "sucesso", dados: row });
   });
 });
