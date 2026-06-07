@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Guia de Desenvolvimento: Trabalho 2º Bimestre Laboratório
 
 Este guia contém os passos essenciais para configurar seu ambiente, gerenciar o código com Git e rodar a aplicação localmente.
@@ -65,5 +64,3 @@ Abra o terminal do seu sistema operacional, certifique-se de estar na pasta raiz
 npm run start
 ```
 =======
-# matchmaking-site
->>>>>>> 8bec190af9bb8793da54cfa36293449a15147ab4
