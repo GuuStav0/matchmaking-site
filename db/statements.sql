@@ -117,12 +117,3 @@ CREATE INDEX IF NOT EXISTS idx_user_games_search ON user_games(game_id, game_sty
 
 -- Otimização para buscar grupos abertos por jogo específicos
 CREATE INDEX IF NOT EXISTS idx_groups_game ON game_groups(game_id);
-
--- 1. Sala Competitiva com 3 membros de 5 slots
-INSERT INTO game_groups (
-    game_id, creator_id, name, bio, max_slots, 
-    game_style, rank_min, rank_max, schedule, language, mic_required, tags
-) VALUES (
-    1, 1, 'Pro Players Only', 'Foco em subir elo, preciso de suporte e jungle sérios.', 5, 
-    'Competitivo', 'Ouro', 'Diamante', 'Noite', 'PT-BR', 1, 'Tryhard, Sérias, Discord'
-);
