@@ -1,3 +1,4 @@
+import Dashboard from "./views/dashboard.jsx";
 import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
 import ProfileSetup from "./views/profile.jsx";
@@ -89,6 +90,15 @@ export default function App() {
             element={
               <RotaPrivada>
                 <Players />
+              </RotaPrivada>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <RotaPrivada>
+                <Dashboard />
               </RotaPrivada>
             }
           />
