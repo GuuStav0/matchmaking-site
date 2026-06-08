@@ -1,4 +1,7 @@
 // App.jsx - Limpo e sem duplicatas
+import { AuthProvider, useAuth } from "./models/authContext.jsx";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 import NotFound from "./views/NotFound.jsx";
 import PlayerProfile from "./views/PlayerProfile.jsx";
 import Dashboard from "./views/dashboard.jsx";
@@ -6,15 +9,13 @@ import Players from "./views/players.jsx";
 import GameSetup from "./views/gameSetup.jsx";
 import ProfileSetup from "./views/profile.jsx";
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AboutUs from "./views/about";
 import AuthScreen from "./views/auth";
 import GamesDirectory from "./views/games";
-import { AuthProvider, useAuth } from "./models/authContext.jsx";
 import RoomsPage from "./views/rooms.jsx";
 import CreateRoom from "./views/createRoom.jsx";
 import RoomDetail from "./views/roomDetail.jsx";
-// ── Sprint 3 ─────────────────────────────────────────────────────────────────
+import AdminDashboard from "./views/AdminDashboard.jsx";
 import ResetPassword from "./views/resetPassword.jsx";
 
 function RotaPrivada({ children }) {
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
           <Route path="/dashboard" element={<RotaPrivada><Dashboard /></RotaPrivada>} />
           <Route path="/players/:id" element={<RotaPrivada><PlayerProfile /></RotaPrivada>} />
+          <Route path="/admin" element={<RotaPrivada><AdminDashboard /></RotaPrivada>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
