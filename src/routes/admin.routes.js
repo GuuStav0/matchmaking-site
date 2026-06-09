@@ -1,22 +1,17 @@
 // src/routes/admin.routes.js
-// Sprint 3 – Admin (Murilo)
+// Rotas do painel Admin (Murilo).
 //
-// Backlog:
-//   • Cadastro de novo jogo (admin)   – Full Stack, Sprint 3
-//   • Edição e remoção de jogo (admin) – Full Stack, Sprint 3
-//
-// Rotas:
 //   GET    /api/admin/stats
 //   GET    /api/admin/users          DELETE /api/admin/users/:id
 //   GET    /api/admin/profiles       DELETE /api/admin/profiles/:id
-//   GET    /api/admin/games          POST /api/admin/games
-//   PUT    /api/admin/games/:id      DELETE /api/admin/games/:id
+//   GET    /api/admin/games          POST/PUT/DELETE /api/admin/games/:id
 //   GET    /api/admin/groups         DELETE /api/admin/groups/:id
 //   GET    /api/admin/group-members  DELETE /api/admin/group-members/:gid/:pid
 
 import { Router }      from "express";
 import { db }          from "../database.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import { sendSuccess, sendError } from "../helpers/response.js";
 
 const router = Router();
 
@@ -25,22 +20,16 @@ const router = Router();
 // setup inicial (primeiro usuário que acessar pode agir como admin).
 function requireAdmin(req, res, next) {
   db.get("SELECT COUNT(*) AS total FROM admins", [], (err, countRow) => {
-    if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+    if (err) return sendError(res, "Erro interno.");
 
-    // Sem admins cadastrados → modo de setup inicial, qualquer usuário logado tem acesso
     if (countRow.total === 0) return next();
 
     db.get(
       "SELECT id FROM admins WHERE user_id = ?",
       [req.userId],
       (err2, adminRow) => {
-        if (err2) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-        if (!adminRow) {
-          return res.status(403).json({
-            status: "erro",
-            mensagem: "Acesso negado. Apenas administradores.",
-          });
-        }
+        if (err2) return sendError(res, "Erro interno.");
+        if (!adminRow) return sendError(res, "Acesso negado. Apenas administradores.", 403);
         next();
       }
     );
@@ -64,7 +53,7 @@ router.get("/stats", requireAuth, requireAdmin, (req, res) => {
     db.get(sql, [], (err, row) => {
       stats[key] = err ? 0 : (row?.n ?? 0);
       if (++done === queries.length) {
-        res.json({ status: "sucesso", dados: stats });
+        sendSuccess(res, { dados: stats });
       }
     });
   });
@@ -76,19 +65,17 @@ router.get("/users", requireAuth, requireAdmin, (req, res) => {
     "SELECT id, email, nickname, created_at FROM users ORDER BY created_at DESC",
     [],
     (err, rows) => {
-      if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-      res.json({ status: "sucesso", dados: rows });
+      if (err) return sendError(res, "Erro interno.");
+      sendSuccess(res, { dados: rows });
     }
   );
 });
 
 router.delete("/users/:id", requireAuth, requireAdmin, (req, res) => {
   db.run("DELETE FROM users WHERE id = ?", [req.params.id], function (err) {
-    if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-    if (this.changes === 0) {
-      return res.status(404).json({ status: "erro", mensagem: "Usuário não encontrado." });
-    }
-    res.json({ status: "sucesso", mensagem: "Usuário excluído com sucesso." });
+    if (err) return sendError(res, "Erro interno.");
+    if (this.changes === 0) return sendError(res, "Usuário não encontrado.", 404);
+    sendSuccess(res, { mensagem: "Usuário excluído com sucesso." });
   });
 });
 
@@ -99,19 +86,17 @@ router.get("/profiles", requireAuth, requireAdmin, (req, res) => {
      FROM profiles ORDER BY created_at DESC`,
     [],
     (err, rows) => {
-      if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-      res.json({ status: "sucesso", dados: rows });
+      if (err) return sendError(res, "Erro interno.");
+      sendSuccess(res, { dados: rows });
     }
   );
 });
 
 router.delete("/profiles/:id", requireAuth, requireAdmin, (req, res) => {
   db.run("DELETE FROM profiles WHERE id = ?", [req.params.id], function (err) {
-    if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-    if (this.changes === 0) {
-      return res.status(404).json({ status: "erro", mensagem: "Perfil não encontrado." });
-    }
-    res.json({ status: "sucesso", mensagem: "Perfil excluído com sucesso." });
+    if (err) return sendError(res, "Erro interno.");
+    if (this.changes === 0) return sendError(res, "Perfil não encontrado.", 404);
+    sendSuccess(res, { mensagem: "Perfil excluído com sucesso." });
   });
 });
 
@@ -121,21 +106,17 @@ router.get("/games", requireAuth, requireAdmin, (req, res) => {
     "SELECT id, name, genre, cover_url, rooms_count, created_at FROM games ORDER BY rooms_count DESC",
     [],
     (err, rows) => {
-      if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-      res.json({ status: "sucesso", dados: rows });
+      if (err) return sendError(res, "Erro interno.");
+      sendSuccess(res, { dados: rows });
     }
   );
 });
 
-// POST /api/admin/games – Cadastro de novo jogo (admin)
 router.post("/games", requireAuth, requireAdmin, (req, res) => {
   const { name, genre, cover_url } = req.body ?? {};
 
   if (!name?.trim() || !genre?.trim()) {
-    return res.status(400).json({
-      status: "erro",
-      mensagem: "Campos obrigatórios: name e genre.",
-    });
+    return sendError(res, "Campos obrigatórios: name e genre.", 400);
   }
 
   const now = new Date().toISOString();
@@ -145,72 +126,48 @@ router.post("/games", requireAuth, requireAdmin, (req, res) => {
     function (err) {
       if (err) {
         if (err.message.includes("UNIQUE")) {
-          return res.status(409).json({
-            status: "erro",
-            mensagem: "Já existe um jogo com esse nome.",
-          });
+          return sendError(res, "Já existe um jogo com esse nome.", 409);
         }
-        console.error("Erro ao criar jogo:", err.message);
-        return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+        return sendError(res, "Erro interno.");
       }
-      res.status(201).json({
-        status: "sucesso",
-        mensagem: "Jogo cadastrado com sucesso!",
-        id: this.lastID,
-      });
+      sendSuccess(res, { mensagem: "Jogo cadastrado com sucesso!", id: this.lastID }, 201);
     }
   );
 });
 
-// PUT /api/admin/games/:id – Edição de jogo (admin)
 router.put("/games/:id", requireAuth, requireAdmin, (req, res) => {
   const { name, genre, cover_url } = req.body ?? {};
 
   if (!name && !genre && cover_url === undefined) {
-    return res.status(400).json({
-      status: "erro",
-      mensagem: "Informe ao menos um campo: name, genre ou cover_url.",
-    });
+    return sendError(res, "Informe ao menos um campo: name, genre ou cover_url.", 400);
   }
 
   const sets = [];
   const vals = [];
 
-  if (name)               { sets.push("name = ?");      vals.push(name.trim()); }
-  if (genre)              { sets.push("genre = ?");     vals.push(genre.trim()); }
-  if (cover_url !== undefined) {
-    sets.push("cover_url = ?");
-    vals.push(cover_url?.trim() || null);
-  }
+  if (name)                    { sets.push("name = ?");      vals.push(name.trim()); }
+  if (genre)                   { sets.push("genre = ?");     vals.push(genre.trim()); }
+  if (cover_url !== undefined) { sets.push("cover_url = ?"); vals.push(cover_url?.trim() || null); }
 
   vals.push(req.params.id);
 
   db.run(`UPDATE games SET ${sets.join(", ")} WHERE id = ?`, vals, function (err) {
     if (err) {
       if (err.message.includes("UNIQUE")) {
-        return res.status(409).json({
-          status: "erro",
-          mensagem: "Já existe um jogo com esse nome.",
-        });
+        return sendError(res, "Já existe um jogo com esse nome.", 409);
       }
-      console.error("Erro ao atualizar jogo:", err.message);
-      return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+      return sendError(res, "Erro interno.");
     }
-    if (this.changes === 0) {
-      return res.status(404).json({ status: "erro", mensagem: "Jogo não encontrado." });
-    }
-    res.json({ status: "sucesso", mensagem: "Jogo atualizado com sucesso!" });
+    if (this.changes === 0) return sendError(res, "Jogo não encontrado.", 404);
+    sendSuccess(res, { mensagem: "Jogo atualizado com sucesso!" });
   });
 });
 
-// DELETE /api/admin/games/:id – Remoção de jogo (admin)
 router.delete("/games/:id", requireAuth, requireAdmin, (req, res) => {
   db.run("DELETE FROM games WHERE id = ?", [req.params.id], function (err) {
-    if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-    if (this.changes === 0) {
-      return res.status(404).json({ status: "erro", mensagem: "Jogo não encontrado." });
-    }
-    res.json({ status: "sucesso", mensagem: "Jogo excluído com sucesso." });
+    if (err) return sendError(res, "Erro interno.");
+    if (this.changes === 0) return sendError(res, "Jogo não encontrado.", 404);
+    sendSuccess(res, { mensagem: "Jogo excluído com sucesso." });
   });
 });
 
@@ -229,19 +186,17 @@ router.get("/groups", requireAuth, requireAdmin, (req, res) => {
      ORDER BY gg.created_at DESC`,
     [],
     (err, rows) => {
-      if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-      res.json({ status: "sucesso", dados: rows });
+      if (err) return sendError(res, "Erro interno.");
+      sendSuccess(res, { dados: rows });
     }
   );
 });
 
 router.delete("/groups/:id", requireAuth, requireAdmin, (req, res) => {
   db.run("DELETE FROM game_groups WHERE id = ?", [req.params.id], function (err) {
-    if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-    if (this.changes === 0) {
-      return res.status(404).json({ status: "erro", mensagem: "Sala não encontrada." });
-    }
-    res.json({ status: "sucesso", mensagem: "Sala excluída com sucesso." });
+    if (err) return sendError(res, "Erro interno.");
+    if (this.changes === 0) return sendError(res, "Sala não encontrada.", 404);
+    sendSuccess(res, { mensagem: "Sala excluída com sucesso." });
   });
 });
 
@@ -257,8 +212,8 @@ router.get("/group-members", requireAuth, requireAdmin, (req, res) => {
      ORDER BY gm.joined_at DESC`,
     [],
     (err, rows) => {
-      if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-      res.json({ status: "sucesso", dados: rows });
+      if (err) return sendError(res, "Erro interno.");
+      sendSuccess(res, { dados: rows });
     }
   );
 });
@@ -269,11 +224,9 @@ router.delete("/group-members/:groupId/:profileId", requireAuth, requireAdmin, (
     "DELETE FROM group_members WHERE group_id = ? AND profile_id = ?",
     [groupId, profileId],
     function (err) {
-      if (err) return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
-      if (this.changes === 0) {
-        return res.status(404).json({ status: "erro", mensagem: "Membro não encontrado." });
-      }
-      res.json({ status: "sucesso", mensagem: "Membro removido com sucesso." });
+      if (err) return sendError(res, "Erro interno.");
+      if (this.changes === 0) return sendError(res, "Membro não encontrado.", 404);
+      sendSuccess(res, { mensagem: "Membro removido com sucesso." });
     }
   );
 });
