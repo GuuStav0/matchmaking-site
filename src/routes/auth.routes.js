@@ -1,18 +1,17 @@
 // src/routes/auth.routes.js
-// Sprint 1 – RF04 · Rotas de Autenticação
+// RF04 · Rotas de Autenticação
 //
 //  POST /api/auth/login     → autenticar usuário
-//  POST /api/auth/register  → criar conta (alias de /api/users)
+//  POST /api/auth/register  → criar conta
 //  POST /api/auth/logout    → encerrar sessão  [auth]
-//
-//  Alias mantido para compatibilidade com authService.js do frontend:
-//  POST /api/login          → mesmo handler de /api/auth/login
+//  POST /api/login          → alias de compatibilidade
 
 import { Router }  from "express";
 import bcrypt      from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { db }      from "../database.js";
 import { criarSessao, removerSessao, requireAuth } from "../middleware/authMiddleware.js";
+import { sendSuccess, sendError } from "../helpers/response.js";
 
 const router = Router();
 
@@ -21,38 +20,27 @@ export async function handlerLogin(req, res) {
   const { email, password } = req.body ?? {};
 
   if (!email || !password) {
-    return res.status(400).json({ status: "erro", mensagem: "Informe email e senha." });
+    return sendError(res, "Informe email e senha.", 400);
   }
 
   db.get(
     "SELECT * FROM users WHERE email = ?",
     [email.toLowerCase().trim()],
     async (err, user) => {
-      if (err) {
-        console.error("Erro no login:", err.message);
-        return res.status(500).json({ status: "erro", mensagem: "Erro interno no servidor." });
-      }
+      if (err) return sendError(res, "Erro interno no servidor.");
 
-      // Mesma mensagem para e-mail e senha inválidos (não revelar qual campo errou)
       if (!user) {
-        return res.status(401).json({
-          status: "erro",
-          mensagem: "E-mail ou senha incorretos. Verifique as credenciais.",
-        });
+        return sendError(res, "E-mail ou senha incorretos. Verifique as credenciais.", 401);
       }
 
       const senhaCorreta = await bcrypt.compare(password, user.password);
       if (!senhaCorreta) {
-        return res.status(401).json({
-          status: "erro",
-          mensagem: "E-mail ou senha incorretos. Verifique as credenciais.",
-        });
+        return sendError(res, "E-mail ou senha incorretos. Verifique as credenciais.", 401);
       }
 
       const token = criarSessao(user.id);
 
-      res.json({
-        status: "sucesso",
+      sendSuccess(res, {
         mensagem: "Login realizado com sucesso!",
         token,
         user: {
@@ -70,16 +58,10 @@ async function handlerRegister(req, res) {
   const { email, password, nickname } = req.body ?? {};
 
   if (!email || !password || !nickname) {
-    return res.status(400).json({
-      status: "erro",
-      mensagem: "Campos obrigatórios: email, password e nickname.",
-    });
+    return sendError(res, "Campos obrigatórios: email, password e nickname.", 400);
   }
   if (password.length < 6) {
-    return res.status(400).json({
-      status: "erro",
-      mensagem: "A senha deve ter no mínimo 6 caracteres.",
-    });
+    return sendError(res, "A senha deve ter no mínimo 6 caracteres.", 400);
   }
 
   try {
@@ -94,31 +76,25 @@ async function handlerRegister(req, res) {
         if (err) {
           if (err.message.includes("UNIQUE")) {
             const campo = err.message.includes("email") ? "E-mail" : "Nickname";
-            return res.status(409).json({
-              status: "erro",
-              mensagem: `${campo} já está em uso. Tente outro.`,
-            });
+            return sendError(res, `${campo} já está em uso. Tente outro.`, 409);
           }
-          console.error("Erro ao registrar:", err.message);
-          return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+          return sendError(res, "Erro interno.");
         }
-        res.status(201).json({
-          status: "sucesso",
+        sendSuccess(res, {
           mensagem: "Conta criada com sucesso! Você já pode fazer login.",
           userId,
-        });
+        }, 201);
       }
     );
-  } catch (err) {
-    console.error("Erro no register:", err.message);
-    res.status(500).json({ status: "erro", mensagem: "Erro interno no servidor." });
+  } catch {
+    sendError(res, "Erro interno no servidor.");
   }
 }
 
 // ── POST /api/auth/logout ─────────────────────────────────────────────────────
 function handlerLogout(req, res) {
   removerSessao(req.token);
-  res.json({ status: "sucesso", mensagem: "Logout realizado com sucesso." });
+  sendSuccess(res, { mensagem: "Logout realizado com sucesso." });
 }
 
 // ── Registro das rotas ────────────────────────────────────────────────────────
