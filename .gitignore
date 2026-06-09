@@ -25,8 +25,4 @@ dist-ssr
 
 # database
 *.sqlite*
-*.db
-*.db-shm
-*.db-wal
-src/db/
 

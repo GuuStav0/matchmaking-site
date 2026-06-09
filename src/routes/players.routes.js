@@ -1,11 +1,11 @@
 // src/routes/players.routes.js
-// RF05–RF10 · Listagem e filtros de jogadores
+// Sprint 2 – RF05 ao RF10
 //
 //  GET  /api/players             → lista jogadores com filtros e paginação
 //  GET  /api/players/:id         → perfil detalhado de um jogador
 //
 // Query params de /api/players:
-//   game    – nome (parcial, case-insensitive) do jogo vinculado
+//   game    – nome (parcial, case-insensitive) do jogo vinculdado
 //   style   – "casual" | "competitive"
 //   rank    – chave de faixa (ver RANK_TERMS abaixo)
 //   hour    – "HH:MM" – filtra jogadores disponíveis nesse horário
@@ -14,10 +14,10 @@
 
 import { Router } from "express";
 import { db }     from "../database.js";
-import { sendSuccess, sendError } from "../helpers/response.js";
 
 const router = Router();
 
+// ── Mapa faixa → termos parciais de rank ─────────────────────────────────────
 const RANK_TERMS = {
   iniciante: ["iniciante", "ferro", "prata i"],
   bronze:    ["bronze", "prata", "ouro nova"],
@@ -27,18 +27,22 @@ const RANK_TERMS = {
   top:       ["global elite", "imortal", "radiante", "desafiante"],
 };
 
+// ── Helper: converte "HH:MM" em minutos desde meia-noite ─────────────────────
 function toMinutes(timeStr) {
   if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return null;
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
 }
 
+// ── Helper: verifica se um horário cai dentro de um intervalo de schedule ─────
+// schedule_availability tem formato "Seg,Qui,Sex 20:00-23:00"
 function horarioDentroDoSchedule(schedule, hourMinutes) {
   if (!schedule || hourMinutes === null) return true;
   const match = schedule.match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
   if (!match) return false;
   const start = toMinutes(match[1]);
   const end   = toMinutes(match[2]);
+  // Suporta intervalos que cruzam meia-noite (ex: 22:00-02:00)
   if (start <= end) {
     return hourMinutes >= start && hourMinutes <= end;
   } else {
@@ -62,6 +66,9 @@ router.get("/", (req, res) => {
   const offset   = (pageNum - 1) * limitNum;
   const hourMin  = toMinutes(hour);
 
+  // ── Query base: une profiles + user_games + games ──────────────────────────
+  //   Usamos LEFT JOIN para incluir jogadores mesmo sem jogo vinculado,
+  //   mas aplicamos WHERE em game/style/rank apenas quando o filtro existe.
   const conditions = [];
   const params     = [];
 
@@ -82,8 +89,12 @@ router.get("/", (req, res) => {
     terms.forEach((t) => params.push(`%${t}%`));
   }
 
-  const whereClause = conditions.length ? "WHERE " + conditions.join(" AND ") : "";
-  const joinType    = (game || style || rank) ? "INNER" : "LEFT";
+  const whereClause = conditions.length
+    ? "WHERE " + conditions.join(" AND ")
+    : "";
+
+  // Quando há filtro por jogo/style/rank forçamos INNER JOIN
+  const joinType = (game || style || rank) ? "INNER" : "LEFT";
 
   const sql = `
     SELECT
@@ -104,8 +115,12 @@ router.get("/", (req, res) => {
   `;
 
   db.all(sql, params, (err, rows) => {
-    if (err) return sendError(res, "Erro interno.");
+    if (err) {
+      console.error("Erro no GET /players:", err.message);
+      return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+    }
 
+    // ── Filtro de horário em memória (é dependente de lógica de intervalo) ───
     let filtered = rows;
     if (hourMin !== null) {
       filtered = rows.filter((r) =>
@@ -113,10 +128,16 @@ router.get("/", (req, res) => {
       );
     }
 
-    const total     = filtered.length;
+    const total   = filtered.length;
     const paginated = filtered.slice(offset, offset + limitNum);
 
-    sendSuccess(res, { total, page: pageNum, limit: limitNum, dados: paginated });
+    res.json({
+      status: "sucesso",
+      total,
+      page:  pageNum,
+      limit: limitNum,
+      dados: paginated,
+    });
   });
 });
 
@@ -143,9 +164,15 @@ router.get("/:id", (req, res) => {
   `;
 
   db.all(sql, [id], (err, rows) => {
-    if (err) return sendError(res, "Erro interno.");
-    if (!rows.length) return sendError(res, "Jogador não encontrado.", 404);
+    if (err) {
+      console.error("Erro no GET /players/:id:", err.message);
+      return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+    }
+    if (!rows.length) {
+      return res.status(404).json({ status: "erro", mensagem: "Jogador não encontrado." });
+    }
 
+    // Agrega múltiplos jogos no mesmo perfil
     const { id: pid, nickname, bio, avatar_url, schedule_availability } = rows[0];
     const jogos = rows
       .filter((r) => r.game_id)
@@ -157,8 +184,16 @@ router.get("/:id", (req, res) => {
         game_rank:  r.game_rank,
       }));
 
-    sendSuccess(res, {
-      dados: { id: pid, nickname, bio, avatar_url, schedule_availability, jogos },
+    res.json({
+      status: "sucesso",
+      dados: {
+        id: pid,
+        nickname,
+        bio,
+        avatar_url,
+        schedule_availability,
+        jogos,
+      },
     });
   });
 });
