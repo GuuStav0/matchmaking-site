@@ -1,17 +1,16 @@
 // src/routes/games.routes.js
-// RF01 · Listagem de jogos
+// Sprint 1 – RF01 · Listagem de jogos disponíveis na plataforma
 //
-//  GET /api/games      → array de jogos (retorna array direto — compatível com games.jsx)
-//  GET /api/games/:id  → detalhes de um jogo
+//  GET /api/games          → array de jogos (consumido por games.jsx)
+//  GET /api/games/:id      → detalhes de um jogo
 
 import { Router } from "express";
 import { db }     from "../database.js";
-import { sendError } from "../helpers/response.js";
 
 const router = Router();
 
 // ── GET /api/games ────────────────────────────────────────────────────────────
-// Retorna array direto (sem wrapper status/dados) para compatibilidade com games.jsx.
+// Suporta filtros opcionais: ?genre=FPS  e  ?search=val
 router.get("/", (req, res) => {
   const { genre, search } = req.query;
   const conditions = [];
@@ -32,7 +31,11 @@ router.get("/", (req, res) => {
                  ORDER BY rooms_count DESC`;
 
   db.all(sql, params, (err, rows) => {
-    if (err) return sendError(res, "Erro ao buscar jogos.");
+    if (err) {
+      console.error("Erro ao listar jogos:", err.message);
+      return res.status(500).json({ status: "erro", mensagem: "Erro ao buscar jogos." });
+    }
+    // Devolve array direto → compatível com games.jsx (setGames(dados))
     res.json(rows);
   });
 });
@@ -43,8 +46,11 @@ router.get("/:id", (req, res) => {
     "SELECT id, name, genre, cover_url, rooms_count FROM games WHERE id = ?",
     [req.params.id],
     (err, row) => {
-      if (err) return sendError(res, "Erro interno.");
-      if (!row) return sendError(res, "Jogo não encontrado.", 404);
+      if (err) {
+        console.error("Erro ao buscar jogo:", err.message);
+        return res.status(500).json({ status: "erro", mensagem: "Erro interno." });
+      }
+      if (!row) return res.status(404).json({ status: "erro", mensagem: "Jogo não encontrado." });
       res.json({ status: "sucesso", dados: row });
     }
   );

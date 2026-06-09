@@ -5,16 +5,14 @@
 import express from "express";
 import cors    from "cors";
 import { initDatabase, db } from "./database.js";
-import gamesRouter           from "../routes/games.routes.js";
-import usersRouter           from "../routes/users.routes.js";
-import authRouter, { handlerLogin } from "../routes/auth.routes.js";
+import gamesRouter           from "./routes/games.routes.js";
+import usersRouter           from "./routes/users.routes.js";
+import authRouter, { handlerLogin } from "./routes/auth.routes.js";
 // ── Sprint 2 ─────────────────────────────────────────────────────────────────
-import profilesRouter        from "../routes/profiles.routes.js";
-import playersRouter         from "../routes/players.routes.js";
+import profilesRouter        from "./routes/profiles.routes.js";
+import playersRouter         from "./routes/players.routes.js";
 // ── Sprint 3 ─────────────────────────────────────────────────────────────────
-import passwordResetRouter   from "../routes/password-reset.routes.js";
-// ── Admin (Murilo) ────────────────────────────────────────────────────────────
-import adminRouter           from "../routes/admin.routes.js";
+import passwordResetRouter   from "./routes/password-reset.routes.js";
 
 const app  = express();
 const PORT = process.env.PORT ?? 3000;
@@ -61,17 +59,10 @@ app.use("/api/players",  playersRouter);
 
 // ── Rotas da Sprint 3 ─────────────────────────────────────────────────────────
 //  Recuperação de senha por e-mail
+//  POST /api/password-resets          – cria token e simula envio
+//  POST /api/password-resets/verify   – valida token recebido por link
+//  POST /api/password-resets/reset    – aplica nova senha com token válido
 app.use("/api/password-resets", passwordResetRouter);
-
-// ── Admin (Murilo) ────────────────────────────────────────────────────────────
-//  CRUD completo para gerenciamento da plataforma
-//  GET    /api/admin/stats
-//  GET    /api/admin/users          DELETE /api/admin/users/:id
-//  GET    /api/admin/profiles       DELETE /api/admin/profiles/:id
-//  GET    /api/admin/games          POST/PUT/DELETE /api/admin/games/:id
-//  GET    /api/admin/groups         DELETE /api/admin/groups/:id
-//  GET    /api/admin/group-members  DELETE /api/admin/group-members/:gid/:pid
-app.use("/api/admin", adminRouter);
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get("/api/health", (_req, res) =>
@@ -92,6 +83,7 @@ initDatabase()
     app.listen(PORT, () => {
       console.log(`\n🚀  API Matchmaking → http://localhost:${PORT}`);
       console.log("─".repeat(52));
+      // Sprint 1
       console.log("  GET    /api/health");
       console.log("  GET    /api/games");
       console.log("  POST   /api/users        (cadastro)");
@@ -102,29 +94,17 @@ initDatabase()
       console.log("  POST   /api/auth/login");
       console.log("  POST   /api/auth/register");
       console.log("  POST   /api/auth/logout  [auth]");
+      // Sprint 2
       console.log("─".repeat(52));
       console.log("  GET    /api/profiles/:id");
       console.log("  PUT    /api/profiles/:id [auth, owner]");
       console.log("  GET    /api/players      ?game=&style=&rank=&hour=&page=&limit=");
       console.log("  GET    /api/players/:id");
+      // Sprint 3
       console.log("─".repeat(52));
-      console.log("  POST   /api/password-resets");
-      console.log("  POST   /api/password-resets/verify");
-      console.log("  POST   /api/password-resets/reset");
-      console.log("─".repeat(52));
-      console.log("  GET    /api/admin/stats          [auth]");
-      console.log("  GET    /api/admin/users          [auth]");
-      console.log("  DELETE /api/admin/users/:id      [auth]");
-      console.log("  GET    /api/admin/profiles       [auth]");
-      console.log("  DELETE /api/admin/profiles/:id   [auth]");
-      console.log("  GET    /api/admin/games           [auth]");
-      console.log("  POST   /api/admin/games           [auth]");
-      console.log("  PUT    /api/admin/games/:id       [auth]");
-      console.log("  DELETE /api/admin/games/:id       [auth]");
-      console.log("  GET    /api/admin/groups          [auth]");
-      console.log("  DELETE /api/admin/groups/:id      [auth]");
-      console.log("  GET    /api/admin/group-members   [auth]");
-      console.log("  DELETE /api/admin/group-members/:gid/:pid [auth]");
+      console.log("  POST   /api/password-resets          (cria token + e-mail)");
+      console.log("  POST   /api/password-resets/verify   (valida token)");
+      console.log("  POST   /api/password-resets/reset    (aplica nova senha)");
       console.log("─".repeat(52) + "\n");
     });
   })
