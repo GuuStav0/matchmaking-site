@@ -1,10 +1,12 @@
 // api.js
 import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import { db, createTables } from "./statements.js";
 
 const app = express();
+app.use(cookieParser());
 const PORT = 3000;
 
 // Configurações Globais / Middlewares
@@ -25,13 +27,12 @@ app.post("/api/login", (req, res) => {
       .json({ status: "erro", mensagem: "Email e senha são obrigatórios." });
   }
 
-  // 🌟 Query Corrigida: Vincula profiles com users usando p.user_id = u.id
   const query = `
     SELECT 
       u.id, 
       u.email, 
       u.password, 
-      p.id AS profile_id, -- Importante para saber qual o ID de perfil dele
+      p.id AS profile_id, 
       p.nickname, 
       p.avatar_url 
     FROM users u
@@ -41,33 +42,53 @@ app.post("/api/login", (req, res) => {
 
   db.get(query, [email], async (err, user) => {
     if (err) {
-      return res.status(500).json({ status: "erro", mensagem: "Erro interno no banco de dados." });
+      return res
+        .status(500)
+        .json({ status: "erro", mensagem: "Erro interno no banco de dados." });
     }
 
     if (!user) {
-      return res.status(401).json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
+      return res
+        .status(401)
+        .json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
     }
 
     try {
-      // Verifica se a senha criptografada bate com a enviada
       const match = await bcrypt.compare(password, user.password);
       if (!match) {
-        return res.status(401).json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
+        return res
+          .status(401)
+          .json({ status: "erro", mensagem: "E-mail ou senha incorretos." });
       }
 
-      // Se deu certo, envia os dados essenciais para o Front-end salvar
+      // 🌟 PASSO NOVO: Configurando o Cookie HttpOnly seguro
+      const umDia = 24 * 60 * 60 * 1000;
+      res.cookie("sessao", user.id, {
+        httpOnly: true, // 🛡️ Impede scripts JS maliciosos de lerem o cookie
+        secure: false, // 🔒 Deixe 'false' para localhost (HTTP). Mude para 'true' apenas em produção (HTTPS)
+        maxAge: umDia, // Tempo de expiração no navegador
+        sameSite: "lax", // Proteção padrão contra CSRF
+        path: "/", // Disponível em todo o domínio do app
+      });
+
+      // Retornamos os dados para o estado do React usar na hora do login,
+      // mas sabendo que a chave de segurança real agora está trancada no cookie!
       res.json({
         status: "sucesso",
+        mensagem: "Login realizado com sucesso!",
         dados: {
           id: user.id,
           profile_id: user.profile_id,
           email: user.email,
           nickname: user.nickname || "Jogador",
-          avatar_url: user.avatar_url
-        }
+          avatar_url: user.avatar_url,
+        },
       });
     } catch (bcryptErr) {
-      res.status(500).json({ status: "erro", mensagem: "Erro ao processar a autenticação." });
+      res.status(500).json({
+        status: "erro",
+        mensagem: "Erro ao processar a autenticação.",
+      });
     }
   });
 });
@@ -331,7 +352,6 @@ app.post("/api/rooms", (req, res) => {
 
 // 1. Cadastro completo: Cria Usuário (users) e Perfil (profiles) com senha criptografada
 app.post("/api/users", async (req, res) => {
-  // <-- ADICIONADO 'async' AQUI
   // Pegando os dados que vêm do formulário do React
   const { email, password, nickname } = req.body;
 
@@ -343,7 +363,7 @@ app.post("/api/users", async (req, res) => {
   }
 
   try {
-    // 🔥 GERANDO A CRIPTOGRAFIA AQUI ANTES DE SALVAR NO BANCO
+    // GERANDO A CRIPTOGRAFIA AQUI ANTES DE SALVAR NO BANCO
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -354,7 +374,6 @@ app.post("/api/users", async (req, res) => {
       // Passo 1: Inserir na tabela 'users' (Usando a 'hashedPassword')
       const queryUser = `INSERT INTO users (email, password) VALUES (?, ?)`;
       db.run(queryUser, [email, hashedPassword], function (err) {
-        // <-- Trocado de 'password' para 'hashedPassword'
         if (err) {
           db.run("ROLLBACK");
           if (err.message.includes("UNIQUE")) {
@@ -483,12 +502,10 @@ app.post("/api/rooms/:roomId/messages", (req, res) => {
   const { profile_id, content } = req.body;
 
   if (!profile_id || !content || content.trim() === "") {
-    return res
-      .status(400)
-      .json({
-        status: "erro",
-        mensagem: "Mensagem inválida ou sem remetente.",
-      });
+    return res.status(400).json({
+      status: "erro",
+      mensagem: "Mensagem inválida ou sem remetente.",
+    });
   }
 
   const query = `
@@ -648,25 +665,64 @@ app.put("/api/user-games", (req, res) => {
 // 5. Atualizar Informações de um Grupo (game_groups)
 app.put("/api/game-groups/:id", (req, res) => {
   const { id } = req.params;
-  const { name, description, max_players } = req.body;
 
+  const {
+    name,
+    bio,
+    game_style,
+    max_slots,
+    rank_min,
+    rank_max,
+    schedule,
+    mic_required,
+    tags,
+  } = req.body;
+
+  // Validação básica igual à sua original
   if (!name) {
     return res
       .status(400)
       .json({ status: "erro", mensagem: "O nome do grupo é obrigatório." });
   }
 
-  const query = `UPDATE game_groups SET name = ?, description = ?, max_players = ? WHERE id = ?`;
+  const query = `
+    UPDATE game_groups 
+    SET 
+      name = ?, 
+      bio = ?, 
+      game_style = ?, 
+      max_slots = ?, 
+      rank_min = ?, 
+      rank_max = ?, 
+      schedule = ?, 
+      mic_required = ?, 
+      tags = ? 
+    WHERE id = ?
+  `;
+
   db.run(
     query,
-    [name, description || null, max_players || 5, id],
+    [
+      name,
+      bio || null,
+      game_style || "Casual",
+      max_slots || 5,
+      rank_min || "Qualquer",
+      rank_max || "Qualquer",
+      schedule || null,
+      mic_required ?? 0, // Garante que salve 1 ou 0
+      tags || null,
+      id,
+    ],
     function (err) {
-      if (err)
+      if (err) {
         return res.status(500).json({ status: "erro", mensagem: err.message });
-      if (this.changes === 0)
+      }
+      if (this.changes === 0) {
         return res
           .status(404)
           .json({ status: "erro", mensagem: "Grupo não encontrado." });
+      }
       res.json({
         status: "sucesso",
         mensagem: "Grupo atualizado com sucesso!",
@@ -680,7 +736,10 @@ app.post("/api/group-members", (req, res) => {
   const { group_id, profile_id } = req.body;
 
   if (!group_id || !profile_id) {
-    return res.status(400).json({ status: "erro", mensagem: "Dados insuficientes para entrar na sala." });
+    return res.status(400).json({
+      status: "erro",
+      mensagem: "Dados insuficientes para entrar na sala.",
+    });
   }
 
   const checkAlreadyMemberQuery = `
@@ -688,21 +747,26 @@ app.post("/api/group-members", (req, res) => {
     WHERE group_id = ? AND profile_id = ?
   `;
 
-  db.get(checkAlreadyMemberQuery, [group_id, profile_id], (errCheck, existingMember) => {
-    if (errCheck) {
-      return res.status(500).json({ status: "erro", mensagem: errCheck.message });
-    }
+  db.get(
+    checkAlreadyMemberQuery,
+    [group_id, profile_id],
+    (errCheck, existingMember) => {
+      if (errCheck) {
+        return res
+          .status(500)
+          .json({ status: "erro", mensagem: errCheck.message });
+      }
 
-    // Se o registro já existir, deixa o jogador passar direto
-    if (existingMember) {
-      return res.json({ 
-        status: "sucesso", 
-        mensagem: "Você já é membro deste lobby, redirecionando..." 
-      });
-    }
+      // Se o registro já existir, deixa o jogador passar direto
+      if (existingMember) {
+        return res.json({
+          status: "sucesso",
+          mensagem: "Você já é membro deste lobby, redirecionando...",
+        });
+      }
 
-    // Se não for membro ainda, verifica se a sala tem espaço disponível antes de inserir
-    const checkSlotsQuery = `
+      // Se não for membro ainda, verifica se a sala tem espaço disponível antes de inserir
+      const checkSlotsQuery = `
       SELECT gg.max_slots, COUNT(gm.profile_id) as current_members
       FROM game_groups gg
       LEFT JOIN group_members gm ON gg.id = gm.group_id
@@ -710,32 +774,45 @@ app.post("/api/group-members", (req, res) => {
       GROUP BY gg.id
     `;
 
-    db.get(checkSlotsQuery, [group_id], (errSlots, roomInfo) => {
-      if (errSlots) {
-        return res.status(500).json({ status: "erro", mensagem: errSlots.message });
-      }
-      if (!roomInfo) {
-        return res.status(404).json({ status: "erro", mensagem: "Sala não encontrada." });
-      }
+      db.get(checkSlotsQuery, [group_id], (errSlots, roomInfo) => {
+        if (errSlots) {
+          return res
+            .status(500)
+            .json({ status: "erro", mensagem: errSlots.message });
+        }
+        if (!roomInfo) {
+          return res
+            .status(404)
+            .json({ status: "erro", mensagem: "Sala não encontrada." });
+        }
 
-      if (roomInfo.current_members >= roomInfo.max_slots) {
-        return res.status(400).json({ status: "erro", mensagem: "A sala atingiu o limite máximo de jogadores!" });
-      }
+        if (roomInfo.current_members >= roomInfo.max_slots) {
+          return res.status(400).json({
+            status: "erro",
+            mensagem: "A sala atingiu o limite máximo de jogadores!",
+          });
+        }
 
-      // Faz o INSERT com segurança
-      const insertQuery = `
+        // Faz o INSERT com segurança
+        const insertQuery = `
         INSERT INTO group_members (group_id, profile_id, joined_at)
         VALUES (?, ?, CURRENT_TIMESTAMP)
       `;
 
-      db.run(insertQuery, [group_id, profile_id], function (insertErr) {
-        if (insertErr) {
-          return res.status(500).json({ status: "erro", mensagem: insertErr.message });
-        }
-        res.status(201).json({ status: "sucesso", mensagem: "Entrou na sala com sucesso!" });
+        db.run(insertQuery, [group_id, profile_id], function (insertErr) {
+          if (insertErr) {
+            return res
+              .status(500)
+              .json({ status: "erro", mensagem: insertErr.message });
+          }
+          res.status(201).json({
+            status: "sucesso",
+            mensagem: "Entrou na sala com sucesso!",
+          });
+        });
       });
-    });
-  });
+    },
+  );
 });
 
 // =======================================================
@@ -810,17 +887,83 @@ app.delete("/api/user-games", (req, res) => {
 });
 
 // 5. Deletar um Grupo de jogo (game_groups)
+// Deletar um Grupo e suas Mensagens (Dono ou Admin)
+// Deletar um Grupo e suas Mensagens (Dono ou Admin) via Headers
 app.delete("/api/game-groups/:id", (req, res) => {
   const { id } = req.params;
+  
+  // Pegamos o ID do perfil requisitante através do Header customizado
+  const profile_id = req.headers["x-profile-id"]; 
 
-  db.run(`DELETE FROM game_groups WHERE id = ?`, [id], function (err) {
-    if (err)
+  if (!profile_id) {
+    return res.status(400).json({ 
+      status: "erro", 
+      mensagem: "O ID do perfil (x-profile-id) é obrigatório no cabeçalho para validação." 
+    });
+  }
+
+  // Query que verifica se ele é o criador do grupo OU se ele possui registro na tabela de admins
+  const checkQuery = `
+    SELECT 
+      gg.creator_id,
+      (SELECT 1 FROM admins a WHERE a.user_id = p.user_id) AS is_admin
+    FROM game_groups gg
+    LEFT JOIN profiles p ON p.id = ?
+    WHERE gg.id = ?
+  `;
+
+  db.get(checkQuery, [profile_id, id], (err, row) => {
+    if (err) {
       return res.status(500).json({ status: "erro", mensagem: err.message });
-    if (this.changes === 0)
-      return res
-        .status(404)
-        .json({ status: "erro", mensagem: "Grupo não encontrado." });
-    res.json({ status: "sucesso", mensagem: "Grupo removido com sucesso." });
+    }
+    
+    if (!row) {
+      return res.status(404).json({ status: "erro", mensagem: "Grupo não encontrado." });
+    }
+
+    const isCreator = row.creator_id === Number(profile_id);
+    const isAdmin = row.is_admin === 1;
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ 
+        status: "erro", 
+        mensagem: "Você não tem permissão para excluir este grupo." 
+      });
+    }
+
+    // Executa a limpeza em série das tabelas usando db.serialize
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+
+      // Passo A: Deleta da tabela correta: room_messages
+      const deleteMessagesQuery = `DELETE FROM room_messages WHERE group_id = ?`;
+      
+      db.run(deleteMessagesQuery, [id], function (msgErr) {
+        if (msgErr) {
+          db.run("ROLLBACK");
+          return res.status(500).json({ status: "erro", mensagem: "Erro ao apagar mensagens: " + msgErr.message });
+        }
+
+        // Passo B: Deleta o grupo de game_groups
+        const deleteGroupQuery = `DELETE FROM game_groups WHERE id = ?`;
+
+        db.run(deleteGroupQuery, [id], function (groupErr) {
+          if (groupErr) {
+            db.run("ROLLBACK");
+            return res.status(500).json({ status: "erro", mensagem: "Erro ao apagar o grupo: " + groupErr.message });
+          }
+
+          db.run("COMMIT");
+
+          res.json({
+            status: "sucesso",
+            mensagem: isAdmin 
+              ? "Grupo e histórico de chat excluídos por um administrador!" 
+              : "Seu grupo e histórico de chat foram excluídos com sucesso!",
+          });
+        });
+      });
+    });
   });
 });
 
@@ -941,12 +1084,10 @@ app.delete("/api/rooms/:roomId/members/:profileId", (req, res) => {
           .json({ status: "erro", mensagem: "Sala não encontrada." });
 
       if (parseInt(room.creator_id) !== parseInt(requesterId)) {
-        return res
-          .status(403)
-          .json({
-            status: "erro",
-            mensagem: "Apenas o Host da sala pode kickar membros.",
-          });
+        return res.status(403).json({
+          status: "erro",
+          mensagem: "Apenas o Host da sala pode kickar membros.",
+        });
       }
 
       // Executa a remoção do membro na tabela de vínculo
