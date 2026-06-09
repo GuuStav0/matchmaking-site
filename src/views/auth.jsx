@@ -270,7 +270,8 @@ function LoginScreen({ setScreen, notificar }) {
       notificar(resultado.mensagem, "success");
 
       // 3. SALVA OS DADOS DO USUÁRIO NA SESSÃO DO REACT E LOCALSTORAGE
-      loginSessao(resultado.user);
+      // token incluído para que chamadas autenticadas (admin, players) funcionem
+      loginSessao({ ...resultado.user, token: resultado.token });
 
       // 4. Redireciona o usuário após 0.5s para a página de jogos
       setTimeout(() => {
