@@ -11,13 +11,24 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const storagedUser = localStorage.getItem("@Matchup:user");
-    if (storagedUser) {
-      setUser(JSON.parse(storagedUser));
+    if (storagedUser && storagedUser !== "undefined") {
+      try {
+        setUser(JSON.parse(storagedUser));
+      } catch (error) {
+        console.error("Erro ao fazer parse do usuário guardado:", error);
+        localStorage.removeItem("@Matchup:user");
+      }
     }
     setLoading(false);
   }, []);
 
   const loginSessao = (dadosUsuario) => {
+    // Impede a autenticação se o objeto for vazio ou inválido
+    if (!dadosUsuario || Object.keys(dadosUsuario).length === 0 || !dadosUsuario.nickname) {
+      console.error("Tentativa de login com dados vazios ou inválidos abortada.");
+      return;
+    }
+
     setUser(dadosUsuario);
     localStorage.setItem("@Matchup:user", JSON.stringify(dadosUsuario));
   };

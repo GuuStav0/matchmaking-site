@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/css/auth.css";
 import { Popup } from "../assets/actions/PopUp.jsx";
+import { useAuth } from "../models/authContext.jsx";
 import { authService } from "../models/authService.js";
-import { useAuth } from "../models/AuthContext.jsx";
 
 const SCREENS = { LOGIN: "login", REGISTER: "register", RECOVER: "recover" };
 
@@ -269,8 +269,7 @@ function LoginScreen({ setScreen, notificar }) {
     if (resultado.sucesso) {
       notificar(resultado.mensagem, "success");
 
-      // 3. SALVA OS DADOS DO USUÁRIO NA SESSÃO DO REACT E LOCALSTORAGE
-      loginSessao(resultado.user);
+      loginSessao(resultado.usuario);
 
       // 4. Redireciona o usuário após 0.5s para a página de jogos
       setTimeout(() => {
