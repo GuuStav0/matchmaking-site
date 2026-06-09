@@ -343,9 +343,9 @@ input {
 }
 
 .form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
 }
 
 .form-grid-register {

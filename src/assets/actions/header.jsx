@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../models/authContext.jsx";
+import "../../assets/css/footer-header.css";
 
 export default function Header() {
   const navigate = useNavigate();
@@ -75,8 +76,8 @@ export default function Header() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="avatar-wrapper-with-caret">
-                  {user?.avatar_url ? (
-                    <img src={user.avatar_url} alt="Perfil" className="header-avatar-img" draggable="false" />
+                  {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Perfil" className="header-avatar-img" draggable="false" />
                   ) : (
                     <div className="header-avatar-placeholder">
                       {getIniciais(user?.nickname || user?.email)}
@@ -139,8 +140,8 @@ export default function Header() {
         {logado && (
           <div className="mobile-sidebar__user">
             <div className="mobile-avatar">
-              {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="Perfil" className="mobile-avatar-img" />
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="Perfil" className="mobile-avatar-img" />
               ) : (
                 <div className="mobile-avatar-placeholder">
                   {getIniciais(user?.nickname || user?.email)}
