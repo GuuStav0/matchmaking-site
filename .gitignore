@@ -29,4 +29,7 @@ dist-ssr
 *.db-shm
 *.db-wal
 src/db/
+db/*.db
+db/*.db-shm
+db/*.db-wal
 

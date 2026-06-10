@@ -8,8 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:init": "node src/database/statements.cjs init",
-    "db:list": "node src/database/statements.cjs list"
+    "server": "node api.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

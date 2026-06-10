@@ -88,7 +88,7 @@ function SlidePanel({ room, onClose }) {
   if (!room) return null;
 
   const handleJoinRoom = async () => {
-    const profileId = user?.id || user?.profile_id;
+    const profileId = user?.profile_id;
 
     if (!profileId) {
       setPopupType("error");
