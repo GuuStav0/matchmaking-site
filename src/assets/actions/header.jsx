@@ -10,8 +10,6 @@ export default function Header() {
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   const dropdownRef = useRef(null);
 
-  console.log("Renderizando Header - logado:", logado, "user:", user);
-
   const handleLogout = () => {
     logoutSessao();
     setDropdownAberto(false);
