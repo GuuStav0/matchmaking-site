@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../models/authContext.jsx";
 import Header from "../assets/actions/header.jsx";
 import Footer from "../assets/actions/footer.jsx";
+import { Popup } from "../assets/actions/PopUp.jsx";
 import PlayerCard from "../components/PlayerCard.jsx";
 import "../assets/css/players.css";
 import "../assets/css/compatibility.css";
@@ -68,7 +69,7 @@ function calcularCompatibilidade(userProfile, player) {
 
   // 1. Mesmo jogo (50 pts)
   const userGames = (userProfile.jogos || []).map((j) =>
-    (j.game_name || "").toLowerCase()
+    (j.game_name || "").toLowerCase(),
   );
   const playerGame = (player.game_name || "").toLowerCase();
 
@@ -79,18 +80,22 @@ function calcularCompatibilidade(userProfile, player) {
 
   // 2. Mesmo estilo (30 pts)
   const userStyles = (userProfile.jogos || []).map((j) => j.game_style);
-  if (
-    player.game_style &&
-    userStyles.includes(player.game_style)
-  ) {
+  if (player.game_style && userStyles.includes(player.game_style)) {
     score += 30;
     razoes.push(
-      player.game_style === "competitive" ? "Estilo competitivo" : "Estilo casual"
+      player.game_style === "competitive"
+        ? "Estilo competitivo"
+        : "Estilo casual",
     );
   }
 
   // 3. Sobreposição de horário (20 pts)
-  if (horariosCoincide(userProfile.schedule_availability, player.schedule_availability)) {
+  if (
+    horariosCoincide(
+      userProfile.schedule_availability,
+      player.schedule_availability,
+    )
+  ) {
     score += 20;
     razoes.push("Disponibilidade compatível");
   }
@@ -105,8 +110,8 @@ function CompatBadge({ score, razoes }) {
     score >= 80
       ? "compat-badge--high"
       : score >= 50
-      ? "compat-badge--mid"
-      : "compat-badge--low";
+        ? "compat-badge--mid"
+        : "compat-badge--low";
 
   return (
     <div className={`compat-badge ${cor}`} title={razoes.join(" · ")}>
@@ -119,15 +124,29 @@ function CompatBadge({ score, razoes }) {
   );
 }
 
-// ─── Card com badge ───────────────────────────────────────────────────────────
+// ─── Card com badge e borda dinâmica ─────────────────────
+
+// ─── Card com badge e repasse de borda dinâmica condicional ───────────────────
 
 function PlayerCardCompat({ player, compatData, ordenandoPorCompat, onClick }) {
+  // 🌟 O SEGREDO: Só calcula e aplica a borda se o jogador tiver um ícone definido (avatar_url)
+  const borderClass = player.avatar_url
+    ? player.game_style === "competitive"
+      ? "avatar-border--competitive" // Roxo se for competitivo
+      : player.game_style === "casual"
+        ? "avatar-border--casual" // Azul se for casual
+        : "avatar-border--none"
+    : ""; // Se não tiver ícone definido, não aplica nenhuma classe de borda
+
   return (
-    <div className="pc-compat-wrapper">
+    <div className="pc-compat-wrapper" onClick={onClick}>
+      {/* O badge de compatibilidade continua funcionando normalmente por cima */}
       {ordenandoPorCompat && compatData && (
         <CompatBadge score={compatData.score} razoes={compatData.razoes} />
       )}
-      <PlayerCard player={player} onClick={onClick} />
+
+      {/* Repassa a classe da borda para o PlayerCard (que só vai colorir quem tem foto) */}
+      <PlayerCard player={player} avatarBorderClass={borderClass} />
     </div>
   );
 }
@@ -139,11 +158,20 @@ export default function Players() {
   const { user } = useAuth();
 
   // Filtros
+  // Filtros
   const [games, setGames] = useState([]);
   const [filterGame, setFilterGame] = useState("");
   const [filterStyle, setFilterStyle] = useState("");
   const [filterRank, setFilterRank] = useState("");
   const [filterHour, setFilterHour] = useState("");
+
+  const [availableRanks, setAvailableRanks] = useState([]);
+
+  const [popupConfig, setPopupConfig] = useState({
+    isOpen: false,
+    message: "",
+    type: "info",
+  });
 
   // Dados
   const [players, setPlayers] = useState([]);
@@ -182,9 +210,10 @@ export default function Players() {
   }, [user?.id]);
 
   // ── Busca jogadores na API ───────────────────────────────────────────────────
+  // ── Busca jogadores na API ───────────────────────────────────────────────────
   const fetchPlayers = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setError(null); // 🌟 GARANTE QUE LIMPA O ERRO ANTERIOR ANTES DE COMEÇAR
     try {
       const params = new URLSearchParams();
       if (filterGame) params.set("game", filterGame);
@@ -194,8 +223,10 @@ export default function Players() {
       params.set("page", page);
       params.set("limit", LIMIT);
 
-      const token = localStorage.getItem("@Matchup:token") ||
-        JSON.parse(localStorage.getItem("@Matchup:user") || "{}").token || "";
+      const token =
+        localStorage.getItem("@Matchup:token") ||
+        JSON.parse(localStorage.getItem("@Matchup:user") || "{}").token ||
+        "";
 
       const res = await fetch(`${API}/players?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -205,15 +236,67 @@ export default function Players() {
       if (data.status === "sucesso") {
         setPlayers(data.dados ?? []);
         setTotal(data.total ?? 0);
+        setError(null); // 🌟 Sucesso absoluto, limpa qualquer resquício de erro
       } else {
         setError("Não foi possível carregar os jogadores.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Erro no fetchPlayers:", err);
       setError("Erro de conexão com o servidor.");
     } finally {
       setLoading(false);
     }
   }, [filterGame, filterStyle, filterRank, filterHour, page]);
+
+  // Executa a busca de jogadores sempre que os filtros ou página mudarem
+  useEffect(() => {
+    fetchPlayers();
+  }, [fetchPlayers]);
+
+  // ── Carrega perfil do usuário logado de forma 100% ISOLADA ────────────────────
+  useEffect(() => {
+    if (!user?.id) return;
+
+    setLoadingProfile(true);
+
+    // Criamos uma função interna para o catch não vazar para o escopo global do componente
+    const carregarPerfilEstrito = async () => {
+      try {
+        const token =
+          localStorage.getItem("@Matchup:token") ||
+          JSON.parse(localStorage.getItem("@Matchup:user") || "{}").token ||
+          "";
+
+        const res = await fetch(`${API}/players/${user.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        if (!res.ok) {
+          // Se a rota não existir (404), saímos graciosamente sem estourar o catch global
+          console.warn(
+            `A rota /api/players/${user.id} retornou status ${res.status}`,
+          );
+          setLoadingProfile(false);
+          return;
+        }
+
+        const data = await res.json();
+        if (data.status === "sucesso") {
+          setUserProfile(data.dados);
+        }
+      } catch (err) {
+        // 🛡️ O segredo está aqui: o erro é silenciado com um warn e NÃO toca no estado 'setError'
+        console.warn(
+          "⚠️ Perfil do usuário não pôde ser mapeado para compatibilidade:",
+          err.message,
+        );
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    carregarPerfilEstrito();
+  }, [user?.id]);
 
   useEffect(() => {
     fetchPlayers();
@@ -235,7 +318,7 @@ export default function Players() {
   const compatMap = useMemo(() => {
     if (!ordenandoPorCompat || !userProfile) return {};
     return Object.fromEntries(
-      players.map((p) => [p.id, calcularCompatibilidade(userProfile, p)])
+      players.map((p) => [p.id, calcularCompatibilidade(userProfile, p)]),
     );
   }, [players, ordenandoPorCompat, userProfile]);
 
@@ -278,7 +361,26 @@ export default function Players() {
             <select
               className="filter-select"
               value={filterGame}
-              onChange={(e) => { setFilterGame(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                const selectedGameName = e.target.value;
+                setFilterGame(selectedGameName);
+                setPage(1);
+
+                // Reseta os filtros dependentes imediatamente para evitar lixo nas queries
+                setFilterStyle("");
+                setFilterRank("");
+
+                // Encontra o objeto do jogo selecionado para puxar as ranks_tags do banco
+                const gameObj = games.find((g) => g.name === selectedGameName);
+                if (gameObj && gameObj.ranks_tags) {
+                  const tagsArray = gameObj.ranks_tags
+                    .split(",")
+                    .map((t) => t.trim());
+                  setAvailableRanks(tagsArray);
+                } else {
+                  setAvailableRanks([]);
+                }
+              }}
             >
               <option value="">Todos os jogos</option>
               {games.map((g) => (
@@ -290,23 +392,43 @@ export default function Players() {
           </div>
 
           {/* Estilo */}
+          {/* Estilo */}
           <div className="filter-group">
             <span className="filter-label">Estilo</span>
             <div className="filter-style-btns">
               {["", "casual", "competitive"].map((s) => (
                 <button
                   key={s}
+                  /* 🌟 REMOVIDO o disabled nativo para permitir o clique */
                   className={[
                     "filter-style-btn",
                     s === "casual" ? "filter-style-btn--casual" : "",
                     s === "competitive" ? "filter-style-btn--competitive" : "",
                     filterStyle === s ? "filter-style-btn--active" : "",
+                    !filterGame ? "filter-style-btn--disabled" : "", // Mantém o visual desabilitado
                   ]
                     .filter(Boolean)
                     .join(" ")}
-                  onClick={() => { setFilterStyle(s); setPage(1); }}
+                  onClick={() => {
+                    /* 🌟 Se não tiver jogo, dispara o PopUp exatamente no botão clicado */
+                    if (!filterGame) {
+                      setPopupConfig({
+                        isOpen: true,
+                        message:
+                          "Selecione um jogo primeiro para poder filtrar por Estilo!",
+                        type: "info",
+                      });
+                      return;
+                    }
+                    setFilterStyle(s);
+                    setPage(1);
+                  }}
                 >
-                  {s === "" ? "Todos" : s === "casual" ? "Casual" : "Competitivo"}
+                  {s === ""
+                    ? "Todos"
+                    : s === "casual"
+                      ? "Casual"
+                      : "Competitivo"}
                 </button>
               ))}
             </div>
@@ -316,17 +438,36 @@ export default function Players() {
           <div className="filter-group">
             <span className="filter-label">Faixa de rank</span>
             <select
-              className="filter-select"
+              className={`filter-select ${!filterGame ? "filter-select--disabled" : ""}`}
               value={filterRank}
-              onChange={(e) => { setFilterRank(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                /* Se por segurança o usuário mudar o valor sem jogo, reseta */
+                if (!filterGame) {
+                  setFilterRank("");
+                  return;
+                }
+                setFilterRank(e.target.value);
+                setPage(1);
+              }}
+              onClick={() => {
+                if (!filterGame) {
+                  setPopupConfig({
+                    isOpen: true,
+                    message:
+                      "Selecione um jogo primeiro para liberar as faixas de Rank!",
+                    type: "info",
+                  });
+                }
+              }}
             >
-              <option value="">Qualquer rank</option>
-              <option value="iniciante">Iniciante</option>
-              <option value="bronze">Bronze / Prata</option>
-              <option value="gold">Ouro / Platina</option>
-              <option value="diamond">Diamante</option>
-              <option value="elite">Elite / Mestre</option>
-              <option value="top">Top (Global / Radiante)</option>
+              <option value="">
+                {filterGame ? "Qualquer rank" : "Selecione um jogo primeiro"}
+              </option>
+              {availableRanks.map((rankTag) => (
+                <option key={rankTag} value={rankTag}>
+                  {rankTag}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -337,7 +478,10 @@ export default function Players() {
               type="time"
               className="filter-time"
               value={filterHour}
-              onChange={(e) => { setFilterHour(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setFilterHour(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
 
@@ -352,12 +496,14 @@ export default function Players() {
                 !userProfile
                   ? "Configure seu perfil primeiro para usar a compatibilidade"
                   : ordenandoPorCompat
-                  ? "Desativar ordenação por compatibilidade"
-                  : "Ordenar por compatibilidade com seu perfil"
+                    ? "Desativar ordenação por compatibilidade"
+                    : "Ordenar por compatibilidade com seu perfil"
               }
             >
               <span className="compat-sort-btn__icon">⚡</span>
-              {ordenandoPorCompat ? "Compatibilidade ativa" : "Por compatibilidade"}
+              {ordenandoPorCompat
+                ? "Compatibilidade ativa"
+                : "Por compatibilidade"}
             </button>
             {!userProfile && !loadingProfile && (
               <span className="compat-sort-hint">
@@ -386,7 +532,11 @@ export default function Players() {
             <span>
               Ordenado por compatibilidade com seu perfil —{" "}
               <strong>
-                {playersOrdenados.filter((p) => (compatMap[p.id]?.score ?? 0) >= 50).length}
+                {
+                  playersOrdenados.filter(
+                    (p) => (compatMap[p.id]?.score ?? 0) >= 50,
+                  ).length
+                }
               </strong>{" "}
               jogador(es) com alta compatibilidade
             </span>
@@ -469,6 +619,12 @@ export default function Players() {
       </main>
 
       <Footer />
+      <Popup
+        isOpen={popupConfig.isOpen}
+        message={popupConfig.message}
+        type={popupConfig.type}
+        onClose={() => setPopupConfig((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

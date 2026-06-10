@@ -32,7 +32,6 @@ export function AuthProvider({ children }) {
         try {
           const parsedUser = JSON.parse(storagedUser);
 
-          // Valida na API se o perfil ainda existe no banco
           const response = await fetch(
             `${API_PATH}/players/${parsedUser.profileId}`,
           ).catch(() => null);
@@ -47,7 +46,6 @@ export function AuthProvider({ children }) {
           } else if (response && response.status === 404) {
             limparCookiesEfetivo();
           } else {
-            // Servidor offline — mantém sessão local
             setUser(parsedUser);
           }
         } catch {

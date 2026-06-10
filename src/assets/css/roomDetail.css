@@ -895,3 +895,48 @@
   .rp__header-actions .btn-manage span:last-child,
   .rp__header-actions .btn-manage svg:last-child { display: none; }
 }
+
+.bg-fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.bg-blur-top {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(124, 58, 237, 0.14) 0%,
+    transparent 65%
+  );
+  top: -10%;
+  left: -10%;
+}
+
+.bg-blur-bottom {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.1) 0%,
+    transparent 65%
+  );
+  bottom: -5%;
+  right: 5%;
+}
+
+.bg-grid-svg {
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+}
+
+.floating-icon {
+  position: absolute;
+  opacity: 0.18;
+}

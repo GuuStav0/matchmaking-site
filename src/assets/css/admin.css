@@ -902,6 +902,7 @@
   background: #1e293b; color: #f87171; border-color: #f87171;
 }
 
+
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .admin-side--open   { width: 56px; }

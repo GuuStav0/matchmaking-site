@@ -9,6 +9,7 @@ export const authService = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+
       const result = await response.json();
 
       if (!response.ok || result.status === "erro") {
@@ -29,7 +30,7 @@ export const authService = {
           avatarUrl: result.dados.avatar_url,
         },
       };
-    } catch (error) {
+    } catch {
       return {
         sucesso: false,
         mensagem: "Não foi possível conectar ao servidor backend.",
@@ -41,9 +42,12 @@ export const authService = {
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password, nickname }),
       });
+
       const result = await response.json();
 
       if (response.ok && result.status === "sucesso") {
@@ -56,11 +60,31 @@ export const authService = {
     }
   },
 
-  recoverPassword: async () => {
-    return { sucesso: false, mensagem: "Recuperação de senha não está disponível no momento." };
+  recoverPassword: async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/recover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      return { sucesso: response.ok, mensagem: data.mensagem };
+    } catch {
+      return { sucesso: false, mensagem: "Erro de conexão com o servidor." };
+    }
   },
 
-  resetPassword: async () => {
-    return { sucesso: false, mensagem: "Funcionalidade não disponível." };
+  resetPassword: async (token, password) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await response.json();
+      return { sucesso: response.ok, mensagem: data.mensagem };
+    } catch {
+      return { sucesso: false, mensagem: "Erro de conexão com o servidor." };
+    }
   },
 };

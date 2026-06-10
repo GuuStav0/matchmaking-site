@@ -1,21 +1,22 @@
-// src/App.jsx
+// App.jsx - Limpo e sem duplicatas
 import { AuthProvider, useAuth } from "./models/authContext.jsx";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import NotFound      from "./views/NotFound.jsx";
+import NotFound from "./views/NotFound.jsx";
 import PlayerProfile from "./views/PlayerProfile.jsx";
-import Dashboard     from "./views/Dashboard.jsx";
-import Players       from "./views/Players.jsx";
-import GameSetup     from "./views/GameSetup.jsx";
-import ProfileSetup  from "./views/Profile.jsx";
-import AboutUs       from "./views/About.jsx";
-import AuthScreen    from "./views/Auth.jsx";
-import GamesDirectory from "./views/Games.jsx";
-import RoomsPage     from "./views/Rooms.jsx";
-import CreateRoom    from "./views/CreateRoom.jsx";
-import RoomDetail    from "./views/RoomDetail.jsx";
+import Dashboard from "./views/dashboard.jsx";
+import Players from "./views/players.jsx";
+import GameSetup from "./views/gameSetup.jsx";
+import ProfileSetup from "./views/profile.jsx";
+import React from "react";
+import AboutUs from "./views/about";
+import AuthScreen from "./views/auth";
+import GamesDirectory from "./views/games";
+import RoomsPage from "./views/rooms.jsx";
+import CreateRoom from "./views/createRoom.jsx";
+import RoomDetail from "./views/roomDetail.jsx";
 import AdminDashboard from "./views/AdminDashboard.jsx";
-import ResetPassword from "./views/ResetPassword.jsx";
+import ResetPassword from "./views/resetPassword.jsx";
 
 function RotaPrivada({ children }) {
   const { logado, loading } = useAuth();
