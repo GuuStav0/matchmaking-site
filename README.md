@@ -21,7 +21,7 @@ Esta é uma API REST robusta desenvolvida em Node.js utilizando o framework **Ex
 A API foi projetada para suportar um ecossistema completo de matchmaking, controlando usuários, perfis detalhados de jogadores, catálogos de jogos, níveis de habilidade e formação de grupos para partidas cooperativas ou competitivas.
 
 
-Por fim, com todas as dependências instaladas e o código pronto, você pode iniciar o servidor de desenvolvimento local do Vite executando o comando `npm run dev`. O terminal exibirá o endereço local da aplicação, que geralmente é `http://localhost:5173/`. Basta abrir essa URL no seu navegador para visualizar o projeto rodando em tempo real com suporte a atualizações automáticas assim que os arquivos forem salvos.
+Por fim, com todas as dependências instaladas e o código pronto, você pode iniciar o servidor de desenvolvimento local do Vite executando o comando `npm run dev` no terminal do site e `npm start` na API. O terminal exibirá o endereço local da aplicação, que geralmente é `http://localhost:5173/`. Basta abrir essa URL no seu navegador para visualizar o projeto rodando em tempo real com suporte a atualizações automáticas assim que os arquivos forem salvos.
 
 ---
 

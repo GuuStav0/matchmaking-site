@@ -64,4 +64,30 @@ export const authService = {
       return { sucesso: false, mensagem: "Erro de conexão com o servidor." };
     }
   },
+  recoverPassword: async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/recover`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      return { sucesso: response.ok, mensagem: data.mensagem };
+    } catch (err) {
+      return { sucesso: false, mensagem: "Erro de conexão com o servidor." };
+    }
+  },
+  resetPassword: async (token, password) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await response.json();
+      return { sucesso: response.ok, mensagem: data.mensagem };
+    } catch (err) {
+      return { sucesso: false, mensagem: "Erro de conexão com o servidor." };
+    }
+  },
 };
