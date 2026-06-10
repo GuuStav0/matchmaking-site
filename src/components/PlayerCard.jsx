@@ -1,6 +1,7 @@
 import "../assets/css/playerCard.css";
 
-export default function PlayerCard({ player, onClick }) {
+// 🌟 ADICIONADO: avatarBorderClass recebido como propriedade (prop)
+export default function PlayerCard({ player, onClick, avatarBorderClass }) {
   const {
     nickname,
     avatar_url,
@@ -28,10 +29,12 @@ export default function PlayerCard({ player, onClick }) {
             <img
               src={avatar_url}
               alt={nickname}
-              className="pc-avatar-img"
+              /* 🌟 ADICIONADO: avatarBorderClass injetado diretamente na imagem original */
+              className={`pc-avatar-img ${avatarBorderClass || ""}`}
               onError={(e) => { e.target.style.display = "none"; }}
             />
           ) : (
+            /* Se não houver foto, o placeholder original com as iniciais continua idêntico */
             <div className={`pc-avatar-placeholder pc-avatar-placeholder--${game_style}`}>
               {getIniciais(nickname)}
             </div>

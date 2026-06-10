@@ -19,7 +19,11 @@
   width: 600px;
   height: 600px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(124, 58, 237, 0.1) 0%,
+    transparent 70%
+  );
   top: -10%;
   left: -5%;
   pointer-events: none;
@@ -224,7 +228,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .players-error {
@@ -387,4 +393,20 @@
 
 .filter-group--compat {
   min-width: 180px;
+}
+
+img.pc-avatar-img.avatar-border--competitive {
+  border: 3px solid #8b5cf6 !important;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6) !important;
+  transition: all 0.3s ease;
+}
+
+img.pc-avatar-img.avatar-border--casual {
+  border: 3px solid #00f0ff !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.6) !important;
+  transition: all 0.3s ease;
+}
+
+img.pc-avatar-img {
+  box-sizing: border-box !important;
 }
