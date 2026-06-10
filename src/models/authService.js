@@ -1,10 +1,7 @@
 // src/models/authService.js
-// Serviço de autenticação — chamadas à API de auth.
-
-import { API_BASE_URL } from "../constants/index.js";
+const API_BASE_URL = "http://localhost:3000/api";
 
 export const authService = {
-  // ─── Login ───────────────────────────────────────────────────────────────────
   login: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/login`, {
@@ -17,18 +14,29 @@ export const authService = {
       if (!response.ok || result.status === "erro") {
         return {
           sucesso: false,
-          mensagem: result.mensagem || "E-mail ou senha incorretos. Verifique as credenciais.",
+          mensagem: result.mensagem || "E-mail ou senha incorretos.",
         };
       }
 
-      // A API retorna os dados do usuário em result.dados (sem token)
-      return { sucesso: true, mensagem: result.mensagem, user: result.dados };
+      return {
+        sucesso: true,
+        mensagem: "Login realizado com sucesso!",
+        usuario: {
+          id:        result.dados.id,
+          profileId: result.dados.profile_id,
+          nickname:  result.dados.nickname,
+          email:     result.dados.email,
+          avatarUrl: result.dados.avatar_url,
+        },
+      };
     } catch (error) {
-      return { sucesso: false, mensagem: `Erro de conexão: ${error.message}` };
+      return {
+        sucesso: false,
+        mensagem: "Não foi possível conectar ao servidor backend.",
+      };
     }
   },
 
-  // ─── Cadastro ────────────────────────────────────────────────────────────────
   register: async (email, password, nickname) => {
     try {
       const response = await fetch(`${API_BASE_URL}/users`, {
@@ -38,30 +46,18 @@ export const authService = {
       });
       const result = await response.json();
 
-      if (!response.ok || result.status === "erro") {
-        throw new Error(result.mensagem || "Erro ao processar o cadastro.");
+      if (response.ok && result.status === "sucesso") {
+        return { sucesso: true, mensagem: result.mensagem };
+      } else {
+        return { sucesso: false, mensagem: result.mensagem || "Erro ao registrar." };
       }
-
-      return {
-        sucesso: true,
-        mensagem: "Conta criada com sucesso! Você já pode fazer login.",
-        userId: result.userId,
-      };
-    } catch (error) {
-      return { sucesso: false, mensagem: error.message };
+    } catch {
+      return { sucesso: false, mensagem: "Erro de conexão com o servidor." };
     }
   },
 
-  // ─── Recuperação de senha (não disponível nesta versão da API) ───────────────
   recoverPassword: async () => {
-    return {
-      sucesso: false,
-      mensagem: "Recuperação de senha não está disponível no momento.",
-    };
-  },
-
-  verifyResetToken: async () => {
-    return { sucesso: false, mensagem: "Funcionalidade não disponível." };
+    return { sucesso: false, mensagem: "Recuperação de senha não está disponível no momento." };
   },
 
   resetPassword: async () => {

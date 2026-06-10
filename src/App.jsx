@@ -39,6 +39,7 @@ export default function App() {
           <Route path="/"                      element={<AboutUs />} />
           <Route path="/games"                 element={<GamesDirectory />} />
           <Route path="/auth"                  element={<RotaPublica><AuthScreen /></RotaPublica>} />
+          <Route path="/reset-password"        element={<RotaPublica><ResetPassword /></RotaPublica>} />
           <Route path="/rooms/:gameId"         element={<RotaPrivada><RoomsPage /></RotaPrivada>} />
           <Route path="/rooms/:gameId/create"  element={<RotaPrivada><CreateRoom /></RotaPrivada>} />
           <Route path="/rooms/:gameId/:roomId" element={<RotaPrivada><RoomDetail /></RotaPrivada>} />

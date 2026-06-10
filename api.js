@@ -2,7 +2,7 @@
 // Base: branch system-api. Rotas /api/admin/* adicionadas para o painel Murilo.
 import express from "express";
 import cors from "cors";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { db, createTables } from "./statements.js";
 
 const app = express();

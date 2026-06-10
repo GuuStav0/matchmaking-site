@@ -891,6 +891,17 @@
   font-size: 14px;
 }
 
+/* ─── LOGOUT BUTTON ─────────────────────────────────────────────────────────── */
+.admin-topbar__logout {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px; border: 1px solid #334155;
+  background: transparent; color: #94a3b8; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+}
+.admin-topbar__logout:hover {
+  background: #1e293b; color: #f87171; border-color: #f87171;
+}
+
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .admin-side--open   { width: 56px; }

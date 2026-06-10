@@ -38,7 +38,7 @@ export default function LoginForm({ setScreen, notificar }) {
 
     if (resultado.sucesso) {
       notificar(resultado.mensagem, "success");
-      loginSessao({ ...resultado.user, token: resultado.token });
+      loginSessao(resultado.usuario);
       setTimeout(() => navigate("/games"), 500);
     } else {
       notificar(resultado.mensagem, "error");
