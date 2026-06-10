@@ -3,6 +3,8 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { enviarEmailRecuperacao } from "./utils/emailService.js";
 import { db, createTables } from "./statements.js";
 
 const app = express();
@@ -254,10 +256,13 @@ app.get("/api/games/:gameId/rooms", (req, res) => {
   });
 });
 
-// Função auxiliar apenas caso seu código original use alguma normalização de strings
 function roomNameMap(name) {
   return name;
 }
+
+// =======================================================
+// MÉTODOS POST (INSERTS - CRIAÇÃO)
+// =======================================================
 
 app.post("/api/rooms", (req, res) => {
   const {
@@ -346,9 +351,63 @@ app.post("/api/rooms", (req, res) => {
   );
 });
 
-// =======================================================
-// MÉTODOS POST (INSERTS - CRIAÇÃO)
-// =======================================================
+app.post("/api/auth/recover", (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res
+      .status(400)
+      .json({ status: "erro", mensagem: "E-mail é obrigatório." });
+  }
+
+  // 1. Verifica se o usuário existe
+  db.get("SELECT id FROM users WHERE email = ?", [email], async (err, user) => {
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
+
+    // Por segurança contra engenharia social, se o e-mail não existir,
+    // respondemos "sucesso" para não expor quais e-mails estão cadastrados.
+    if (!user) {
+      return res.json({
+        status: "sucesso",
+        mensagem: "Se o e-mail existir, um link de recuperação foi enviado.",
+      });
+    }
+
+    // 2. Gera um token hexa aleatório de 64 caracteres
+    const token = crypto.randomBytes(32).toString("hex");
+    // Tempo de expiração: +15 minutos no futuro
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    // 3. Salva o token na tabela password_resets (conforme o seu script SQL!)
+    const insertTokenQuery = `
+      INSERT INTO password_resets (user_id, token, expires_at, used)
+      VALUES (?, ?, ?, 0)
+    `;
+
+    db.run(insertTokenQuery, [user.id, token, expiresAt], async (insertErr) => {
+      if (insertErr)
+        return res
+          .status(500)
+          .json({ status: "erro", mensagem: insertErr.message });
+
+      try {
+        // 4. Dispara o e-mail real
+        await enviarEmailRecuperacao(email, token);
+        res.json({
+          status: "sucesso",
+          mensagem:
+            "Link de recuperação enviado com sucesso para o seu e-mail!",
+        });
+      } catch (mailErr) {
+        console.error("Erro nodemailer:", mailErr);
+        res
+          .status(500)
+          .json({ status: "erro", mensagem: "Erro ao disparar o e-mail." });
+      }
+    });
+  });
+});
 
 // 1. Cadastro completo: Cria Usuário (users) e Perfil (profiles) com senha criptografada
 app.post("/api/users", async (req, res) => {
@@ -524,8 +583,81 @@ app.post("/api/rooms/:roomId/messages", (req, res) => {
 // MÉTODOS PUT (UPDATES - ATUALIZAÇÃO)
 // =======================================================
 
+// Rota para redefinir a senha usando o token de recuperação
+app.post("/api/auth/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res
+      .status(400)
+      .json({ status: "erro", mensagem: "Dados incompletos." });
+  }
+
+  const saltRounds = 10;
+
+  //  a senha existe, Gera o hash com segurança
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+  // 1. Valida o token: precisa existir, não ter sido usado e não estar expirado
+  const validateTokenQuery = `
+    SELECT id, user_id FROM password_resets 
+    WHERE token = ? AND used = 0 AND expires_at > DATETIME('now')
+  `;
+
+  db.get(validateTokenQuery, [token], (err, resetRequest) => {
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
+    if (!resetRequest) {
+      return res.status(400).json({
+        status: "erro",
+        mensagem: "Token inválido, já utilizado ou expirado.",
+      });
+    }
+
+    // Executando as atualizações em lote de forma limpa no SQLite
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+
+      // Atualiza a senha na tabela users com o hash seguro
+      db.run(
+        "UPDATE users SET password = ? WHERE id = ?",
+        [hashedPassword, resetRequest.user_id],
+        function (userErr) {
+          if (userErr) {
+            db.run("ROLLBACK");
+            return res
+              .status(500)
+              .json({ status: "erro", mensagem: "Erro ao atualizar senha." });
+          }
+
+          // Queima o token para não deixar reutilizar (used = 1)
+          db.run(
+            "UPDATE password_resets SET used = 1 WHERE id = ?",
+            [resetRequest.id],
+            function (tokenErr) {
+              if (tokenErr) {
+                db.run("ROLLBACK");
+                return res.status(500).json({
+                  status: "erro",
+                  mensagem: "Erro ao invalidar token.",
+                });
+              }
+
+              db.run("COMMIT");
+              res.json({
+                status: "sucesso",
+                mensagem: "Sua senha foi redefinida com sucesso!",
+              });
+            },
+          );
+        },
+      );
+    });
+  });
+});
+
 // 1. Atualizar Senha do Usuário (users)
-app.put("/api/users/:id", (req, res) => {
+app.put("/api/users/:id", async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
 
@@ -535,8 +667,13 @@ app.put("/api/users/:id", (req, res) => {
       .json({ status: "erro", mensagem: "A nova password é obrigatória." });
   }
 
+  const saltRounds = 10;
+
+  // Agora que a validação passou, gera o hash com segurança
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+
   const query = `UPDATE users SET password = ? WHERE id = ?`;
-  db.run(query, [password, id], function (err) {
+  db.run(query, [hashedPassword, id], function (err) {
     if (err)
       return res.status(500).json({ status: "erro", mensagem: err.message });
     if (this.changes === 0)
@@ -891,14 +1028,15 @@ app.delete("/api/user-games", (req, res) => {
 // Deletar um Grupo e suas Mensagens (Dono ou Admin) via Headers
 app.delete("/api/game-groups/:id", (req, res) => {
   const { id } = req.params;
-  
+
   // Pegamos o ID do perfil requisitante através do Header customizado
-  const profile_id = req.headers["x-profile-id"]; 
+  const profile_id = req.headers["x-profile-id"];
 
   if (!profile_id) {
-    return res.status(400).json({ 
-      status: "erro", 
-      mensagem: "O ID do perfil (x-profile-id) é obrigatório no cabeçalho para validação." 
+    return res.status(400).json({
+      status: "erro",
+      mensagem:
+        "O ID do perfil (x-profile-id) é obrigatório no cabeçalho para validação.",
     });
   }
 
@@ -916,18 +1054,20 @@ app.delete("/api/game-groups/:id", (req, res) => {
     if (err) {
       return res.status(500).json({ status: "erro", mensagem: err.message });
     }
-    
+
     if (!row) {
-      return res.status(404).json({ status: "erro", mensagem: "Grupo não encontrado." });
+      return res
+        .status(404)
+        .json({ status: "erro", mensagem: "Grupo não encontrado." });
     }
 
     const isCreator = row.creator_id === Number(profile_id);
     const isAdmin = row.is_admin === 1;
 
     if (!isCreator && !isAdmin) {
-      return res.status(403).json({ 
-        status: "erro", 
-        mensagem: "Você não tem permissão para excluir este grupo." 
+      return res.status(403).json({
+        status: "erro",
+        mensagem: "Você não tem permissão para excluir este grupo.",
       });
     }
 
@@ -937,11 +1077,14 @@ app.delete("/api/game-groups/:id", (req, res) => {
 
       // Passo A: Deleta da tabela correta: room_messages
       const deleteMessagesQuery = `DELETE FROM room_messages WHERE group_id = ?`;
-      
+
       db.run(deleteMessagesQuery, [id], function (msgErr) {
         if (msgErr) {
           db.run("ROLLBACK");
-          return res.status(500).json({ status: "erro", mensagem: "Erro ao apagar mensagens: " + msgErr.message });
+          return res.status(500).json({
+            status: "erro",
+            mensagem: "Erro ao apagar mensagens: " + msgErr.message,
+          });
         }
 
         // Passo B: Deleta o grupo de game_groups
@@ -950,15 +1093,18 @@ app.delete("/api/game-groups/:id", (req, res) => {
         db.run(deleteGroupQuery, [id], function (groupErr) {
           if (groupErr) {
             db.run("ROLLBACK");
-            return res.status(500).json({ status: "erro", mensagem: "Erro ao apagar o grupo: " + groupErr.message });
+            return res.status(500).json({
+              status: "erro",
+              mensagem: "Erro ao apagar o grupo: " + groupErr.message,
+            });
           }
 
           db.run("COMMIT");
 
           res.json({
             status: "sucesso",
-            mensagem: isAdmin 
-              ? "Grupo e histórico de chat excluídos por um administrador!" 
+            mensagem: isAdmin
+              ? "Grupo e histórico de chat excluídos por um administrador!"
               : "Seu grupo e histórico de chat foram excluídos com sucesso!",
           });
         });
@@ -969,42 +1115,80 @@ app.delete("/api/game-groups/:id", (req, res) => {
 
 // GET /api/players — Lista jogadores com filtros opcionais (?game=&style=)
 app.get("/api/players", (req, res) => {
-  const { game, style } = req.query;
+  const { game, style, rank } = req.query; // Removeu o 'hour' daqui
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 12;
+  const offset = (page - 1) * limit;
 
-  let query = `
-    SELECT DISTINCT
+  let WHERE_CLAUSES = [];
+  let queryParams = [];
+
+  if (game) {
+    WHERE_CLAUSES.push("g.name LIKE ?");
+    queryParams.push(`%${game}%`);
+  }
+  if (style) {
+    WHERE_CLAUSES.push("ug.game_style = ?");
+    queryParams.push(style);
+  }
+  if (rank) {
+    WHERE_CLAUSES.push("ug.game_rank = ?");
+    queryParams.push(rank);
+  }
+
+  const whereStatement =
+    WHERE_CLAUSES.length > 0 ? `WHERE ${WHERE_CLAUSES.join(" AND ")}` : "";
+
+  const countQuery = `
+    SELECT COUNT(DISTINCT p.id) as total 
+    FROM profiles p
+    INNER JOIN users u ON p.user_id = u.id
+    LEFT JOIN user_games ug ON p.id = ug.profile_id
+    LEFT JOIN games g ON ug.game_id = g.id
+    ${whereStatement}
+  `;
+
+  const mainQuery = `
+    SELECT 
       p.id,
+      p.user_id,
       p.nickname,
       p.bio,
       p.avatar_url,
       p.schedule_availability,
+      g.name AS game_name,
       ug.game_style,
       ug.game_rank,
-      g.name AS game_name
+      u.email
     FROM profiles p
-    INNER JOIN user_games ug ON p.id = ug.profile_id
-    INNER JOIN games g ON ug.game_id = g.id
-    WHERE 1=1
+    INNER JOIN users u ON p.user_id = u.id
+    LEFT JOIN user_games ug ON p.id = ug.profile_id
+    LEFT JOIN games g ON ug.game_id = g.id
+    ${whereStatement}
+    GROUP BY p.id
+    LIMIT ? OFFSET ?
   `;
 
-  const params = [];
+  db.get(countQuery, queryParams, (countErr, countRow) => {
+    if (countErr) {
+      return res
+        .status(500)
+        .json({ status: "erro", mensagem: countErr.message });
+    }
 
-  if (game) {
-    query += ` AND g.id = ?`;
-    params.push(game);
-  }
+    const finalParams = [...queryParams, limit, offset];
 
-  if (style) {
-    query += ` AND ug.game_style = ?`;
-    params.push(style);
-  }
+    db.all(mainQuery, finalParams, (err, rows) => {
+      if (err) {
+        return res.status(500).json({ status: "erro", mensagem: err.message });
+      }
 
-  query += ` ORDER BY p.nickname ASC LIMIT 50`;
-
-  db.all(query, params, (err, rows) => {
-    if (err)
-      return res.status(500).json({ status: "erro", mensagem: err.message });
-    res.json({ status: "sucesso", dados: rows });
+      res.json({
+        status: "sucesso",
+        dados: rows || [],
+        total: countRow ? countRow.total : 0,
+      });
+    });
   });
 });
 
