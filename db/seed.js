@@ -149,6 +149,11 @@ async function runSeed() {
       "INSERT INTO room_messages (group_id, profile_id, content) VALUES (2, 1, 'Vou junto, sem stress hoje haha');",
     );
 
+    // 13. Inserir um registro de password_reset para testes (password_resets)
+    await executar(`
+      INSERT INTO password_resets (user_id, token, expires_at, used) 
+      VALUES (2, 'abc123tokendetestevalido64charsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', datetime('now', '+15 minutes'), 0);
+    `);
 
     console.log("─────────────────────────────────────────────");
     console.log("✅ Banco de dados RESETADO e POPULADO com sucesso!");
