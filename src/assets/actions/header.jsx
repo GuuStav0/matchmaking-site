@@ -132,6 +132,11 @@ export default function Header() {
                   <button onClick={() => { navigate("/meus-jogos"); setDropdownAberto(false); }} className="dropdown-item">
                     Meus Jogos
                   </button>
+                  {user?.isAdmin && (
+                    <button onClick={() => { navigate("/admin"); setDropdownAberto(false); }} className="dropdown-item">
+                      ⚡ Painel Admin
+                    </button>
+                  )}
                   <button onClick={handleLogout} className="dropdown-item logout-btn">
                     Sair (Sign Out)
                   </button>
@@ -197,6 +202,9 @@ export default function Header() {
               <hr className="mobile-sidebar__divider" />
               <button className="mobile-nav-item" onClick={() => navegar("/perfil")}>👤 Meu Perfil</button>
               <button className="mobile-nav-item" onClick={() => navegar("/meus-jogos")}>🎯 Meus Jogos</button>
+              {user?.isAdmin && (
+                <button className="mobile-nav-item" onClick={() => navegar("/admin")}>⚡ Painel Admin</button>
+              )}
               <button className="mobile-nav-item mobile-nav-item--logout" onClick={handleLogout}>🚪 Sair</button>
             </>
           )}

@@ -32,6 +32,14 @@ function RotaPublica({ children }) {
   return children;
 }
 
+function RotaAdmin({ children }) {
+  const { logado, loading, user } = useAuth();
+  if (loading) return <div className="loading-tela">Carregando sessão...</div>;
+  if (!logado) return <Navigate to="/auth" replace />;
+  if (!user?.isAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -49,7 +57,7 @@ export default function App() {
           <Route path="/players" element={<RotaPrivada><Players /></RotaPrivada>} />
           <Route path="/dashboard" element={<RotaPrivada><Dashboard /></RotaPrivada>} />
           <Route path="/players/:id" element={<RotaPrivada><PlayerProfile /></RotaPrivada>} />
-          <Route path="/admin" element={<RotaPrivada><AdminDashboard /></RotaPrivada>} />
+          <Route path="/admin" element={<RotaAdmin><AdminDashboard /></RotaAdmin>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,72 +1,25 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../models/authContext.jsx";
 import "../assets/css/admin.css";
 
-// ─── MOCK DATA ─────────────────────────────────────────────────────────────────
-const MOCK = {
-  users: Array.from({ length: 38 }, (_, i) => ({
-    id: i + 1,
-    email: `user${i + 1}@mail.com`,
-    created_at: `2025-0${(i % 9) + 1}-${String((i % 28) + 1).padStart(2, "0")}`,
-  })),
-  profiles: Array.from({ length: 38 }, (_, i) => ({
-    id: i + 1,
-    user_id: i + 1,
-    nickname: ["GhostReaper","LunaStrike","SkyWarden","NovaPulse","IronVeil","CipherX","PixelStar","VoidHunter","NeonRaider","StormBlade"][i % 10] + (i > 9 ? i : ""),
-    bio: i % 3 === 0 ? "Jogador competitivo focado em rank." : i % 3 === 1 ? "Casual e sempre disposto a ajudar." : null,
-    avatar_url: null,
-    schedule_availability: ["21h–00h", "Fins de semana", "Madrugada", "Qualquer horário"][i % 4],
-    created_at: `2025-0${(i % 9) + 1}-${String((i % 28) + 1).padStart(2, "0")}`,
-  })),
-  games: [
-    { id:1, name:"Valorant",          genre:"FPS",          rooms_count:142 },
-    { id:2, name:"League of Legends", genre:"MOBA",         rooms_count:98  },
-    { id:3, name:"CS2",               genre:"FPS",          rooms_count:87  },
-    { id:4, name:"Apex Legends",      genre:"Battle Royale",rooms_count:63  },
-    { id:5, name:"Rainbow Six Siege", genre:"FPS",          rooms_count:55  },
-    { id:6, name:"Rocket League",     genre:"Esporte",      rooms_count:44  },
-    { id:7, name:"Dota 2",            genre:"MOBA",         rooms_count:39  },
-    { id:8, name:"Overwatch 2",       genre:"FPS",          rooms_count:36  },
-    { id:9, name:"Fortnite",          genre:"Battle Royale",rooms_count:31  },
-    { id:10,name:"Minecraft",         genre:"Sandbox",      rooms_count:19  },
-    { id:11,name:"FIFA 25",           genre:"Esporte",      rooms_count:17  },
-    { id:12,name:"World of Warcraft", genre:"MMORPG",       rooms_count:15  },
-  ],
-  groups: Array.from({ length: 24 }, (_, i) => ({
-    id: i + 1,
-    name: ["Rank até Imortal","Casual fins de semana","Trio Duelist","Full team 5v5","Noturno intenso","Aprendendo a jogar"][i % 6] + (i > 5 ? ` #${i}` : ""),
-    game_id: (i % 12) + 1,
-    game_name: ["Valorant","LoL","CS2","Apex","R6S","Rocket League","Dota 2","OW2","Fortnite","Minecraft","FIFA 25","WoW"][i % 12],
-    owner_id: (i % 38) + 1,
-    style: i % 2 === 0 ? "Competitivo" : "Casual",
-    members_count: (i % 4) + 1,
-    slots: 5,
-    status: i % 7 === 0 ? "closed" : "open",
-    created_at: `2025-0${(i % 9) + 1}-${String((i % 28) + 1).padStart(2, "0")}`,
-  })),
-  group_members: Array.from({ length: 62 }, (_, i) => ({
-    id: i + 1,
-    group_id: (i % 24) + 1,
-    user_id: (i % 38) + 1,
-    role: i % 6 === 0 ? "owner" : "member",
-    joined_at: `2025-0${(i % 9) + 1}-${String((i % 28) + 1).padStart(2, "0")}`,
-  })),
-};
-
-const STATS = [
-  { label: "Usuários",   value: 38,  icon: "👤", color: "#7c3aed", delta: "+12%" },
-  { label: "Perfis",     value: 38,  icon: "🪪", color: "#0ea5e9", delta: "+12%" },
-  { label: "Jogos",      value: 12,  icon: "🎮", color: "#10b981", delta: "+2"   },
-  { label: "Salas",      value: 24,  icon: "🏠", color: "#f59e0b", delta: "+18%" },
-  { label: "Membros",    value: 62,  icon: "👥", color: "#ec4899", delta: "+24%" },
-];
+const API_BASE = "http://localhost:3000/api";
 
 const SECTIONS = [
-  { id: "overview",      label: "Visão Geral",   icon: "▦" },
-  { id: "users",         label: "Usuários",       icon: "👤" },
-  { id: "profiles",      label: "Perfis",         icon: "🪪" },
-  { id: "games",         label: "Jogos",          icon: "🎮" },
-  { id: "groups",        label: "Salas",          icon: "🏠" },
-  { id: "group_members", label: "Membros Salas",  icon: "👥" },
+  { id: "overview",      label: "Visão Geral",  icon: "▦" },
+  { id: "users",         label: "Usuários",      icon: "👤" },
+  { id: "profiles",      label: "Perfis",        icon: "🪪" },
+  { id: "games",         label: "Jogos",         icon: "🎮" },
+  { id: "groups",        label: "Salas",         icon: "🏠" },
+  { id: "group_members", label: "Membros Salas", icon: "👥" },
+];
+
+const STATS_CONFIG = [
+  { key: "users",         label: "Usuários", icon: "👤", color: "#7c3aed" },
+  { key: "profiles",      label: "Perfis",   icon: "🪪", color: "#0ea5e9" },
+  { key: "games",         label: "Jogos",    icon: "🎮", color: "#10b981" },
+  { key: "groups",        label: "Salas",    icon: "🏠", color: "#f59e0b" },
+  { key: "group_members", label: "Membros",  icon: "👥", color: "#ec4899" },
 ];
 
 const PER_PAGE = 10;
@@ -86,7 +39,7 @@ function StatCard({ stat, index }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     let c = 0;
-    const step = Math.ceil(stat.value / 30);
+    const step = Math.max(1, Math.ceil(stat.value / 30));
     const t = setInterval(() => {
       c = Math.min(c + step, stat.value);
       setCount(c);
@@ -100,7 +53,6 @@ function StatCard({ stat, index }) {
       <div className="stat-card__glow" />
       <div className="stat-card__top">
         <span className="stat-card__icon">{stat.icon}</span>
-        <span className="stat-card__delta">{stat.delta}</span>
       </div>
       <div className="stat-card__value">{count.toLocaleString("pt-BR")}</div>
       <div className="stat-card__label">{stat.label}</div>
@@ -115,16 +67,11 @@ function StatCard({ stat, index }) {
 function Pagination({ page, total, perPage, onChange }) {
   const totalPages = Math.ceil(total / perPage);
   if (totalPages <= 1) return null;
-
   const pages = [];
   for (let i = 1; i <= totalPages; i++) {
-    if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) {
-      pages.push(i);
-    } else if (pages[pages.length - 1] !== "…") {
-      pages.push("…");
-    }
+    if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) pages.push(i);
+    else if (pages[pages.length - 1] !== "…") pages.push("…");
   }
-
   return (
     <div className="pagination">
       <span className="pagination__info">
@@ -164,26 +111,119 @@ function ConfirmModal({ msg, onConfirm, onClose }) {
   );
 }
 
+// ─── EDIT MODAL ───────────────────────────────────────────────────────────────
+const EDIT_FIELDS = {
+  games: [
+    { key: "name",      label: "Nome",          type: "text" },
+    { key: "image_url", label: "URL da Imagem", type: "text" },
+  ],
+  groups: [
+    { key: "name",       label: "Nome",     type: "text" },
+    { key: "bio",        label: "Descrição", type: "textarea" },
+    { key: "game_style", label: "Estilo",   type: "select", options: ["Casual", "Competitivo"] },
+  ],
+  profiles: [
+    { key: "nickname", label: "Nickname", type: "text" },
+    { key: "bio",      label: "Bio",      type: "textarea" },
+  ],
+};
+
+function EditModal({ section, row, onSave, onClose }) {
+  const fields = EDIT_FIELDS[section];
+  const [values, setValues] = useState(() =>
+    Object.fromEntries(fields.map(f => [f.key, row[f.key] ?? ""]))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const ok = await onSave(values);
+    setSaving(false);
+    if (ok) onClose();
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+        <div className="modal__hdr">
+          <span className="modal__title">Editar registro #{row.id}</span>
+          <button className="modal__x" onClick={onClose}><IClose /></button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal__body" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {fields.map(f => (
+              <div key={f.key} className="modal__field">
+                <label className="modal__label">{f.label}</label>
+                {f.type === "textarea" ? (
+                  <textarea
+                    className="modal__input"
+                    rows={3}
+                    value={values[f.key]}
+                    onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                  />
+                ) : f.type === "select" ? (
+                  <select
+                    className="modal__input"
+                    value={values[f.key]}
+                    onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                  >
+                    {f.options.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <input
+                    className="modal__input"
+                    type="text"
+                    value={values[f.key]}
+                    required={f.key === "name" || f.key === "nickname"}
+                    onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="modal__footer">
+            <button type="button" className="btn-sec" onClick={onClose}>Cancelar</button>
+            <button
+              type="submit"
+              className="btn-del"
+              style={{ background: "rgba(124,58,237,0.2)", borderColor: "rgba(124,58,237,0.4)", color: "#c084fc" }}
+              disabled={saving}
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── TABLE ────────────────────────────────────────────────────────────────────
-function Table({ columns, data, onDelete }) {
+function Table({ section, columns, data, onDelete, onEdit }) {
   const [confirm, setConfirm] = useState(null);
-
-  const handleDelete = (row) => {
-    setConfirm(row);
-  };
-
-  const confirmDelete = () => {
-    onDelete(confirm.id);
-    setConfirm(null);
-  };
+  const [editing, setEditing] = useState(null);
+  const canEdit = !!onEdit;
 
   return (
     <>
       {confirm && (
         <ConfirmModal
           msg={`Excluir registro #${confirm.id}? Esta ação é irreversível.`}
-          onConfirm={confirmDelete}
+          onConfirm={() => { onDelete(confirm); setConfirm(null); }}
           onClose={() => setConfirm(null)}
+        />
+      )}
+      {editing && (
+        <EditModal
+          section={section}
+          row={editing}
+          onSave={async (fields) => {
+            const ok = await onEdit(editing, fields);
+            if (ok) setEditing(null);
+            return ok;
+          }}
+          onClose={() => setEditing(null)}
         />
       )}
       <div className="tbl-wrap">
@@ -203,7 +243,7 @@ function Table({ columns, data, onDelete }) {
           </thead>
           <tbody>
             {data.map((row, ri) => (
-              <tr key={row.id} className="tbl__row" style={{ animationDelay: `${ri * 30}ms` }}>
+              <tr key={row.id ?? ri} className="tbl__row" style={{ animationDelay: `${ri * 30}ms` }}>
                 {columns.map(col => (
                   <td key={col.key} className="tbl__td">
                     {col.render ? col.render(row[col.key], row) : (
@@ -217,10 +257,20 @@ function Table({ columns, data, onDelete }) {
                 ))}
                 <td className="tbl__td tbl__td--actions">
                   <div className="tbl__action-btns">
-                    <button className="tbl__btn tbl__btn--edit" title="Editar">
+                    <button
+                      className="tbl__btn tbl__btn--edit"
+                      title={canEdit ? "Editar" : "Edição não disponível"}
+                      onClick={canEdit ? () => setEditing(row) : undefined}
+                      disabled={!canEdit}
+                      style={!canEdit ? { opacity: 0.3, cursor: "not-allowed" } : {}}
+                    >
                       <IEdit />
                     </button>
-                    <button className="tbl__btn tbl__btn--del" title="Excluir" onClick={() => handleDelete(row)}>
+                    <button
+                      className="tbl__btn tbl__btn--del"
+                      title="Excluir"
+                      onClick={() => setConfirm(row)}
+                    >
                       <ITrash />
                     </button>
                   </div>
@@ -234,59 +284,66 @@ function Table({ columns, data, onDelete }) {
   );
 }
 
-// ─── SECTION VIEWS ────────────────────────────────────────────────────────────
-function SectionView({ id, data, setData }) {
-  const [page,    setPage]    = useState(1);
-  const [search,  setSearch]  = useState("");
+// ─── SECTION VIEW ────────────────────────────────────────────────────────────
+const COLS = {
+  users: [
+    { key: "id",         label: "#",         mono: true },
+    { key: "email",      label: "E-mail" },
+    { key: "created_at", label: "Criado em",  render: v => <span className="tbl__date">{v}</span> },
+  ],
+  profiles: [
+    { key: "id",                    label: "#",       mono: true },
+    { key: "user_id",               label: "user_id", mono: true },
+    { key: "nickname",              label: "Nickname", render: v => <span className="tbl__nick"><span className="tbl__nick-av">{(v || "?")[0]}</span>{v}</span> },
+    { key: "schedule_availability", label: "Horário" },
+    { key: "bio",                   label: "Bio", render: v => v ? <span className="tbl__clamp">{v}</span> : <span className="tbl__null">—</span> },
+    { key: "created_at",            label: "Criado em", render: v => <span className="tbl__date">{v}</span> },
+  ],
+  games: [
+    { key: "id",          label: "#",     mono: true },
+    { key: "name",        label: "Nome",  render: v => <strong style={{ color: "#f1f5f9" }}>{v}</strong> },
+    { key: "genre",       label: "Gênero", render: v => <span className="tbl__genre">{v}</span> },
+    { key: "rooms_count", label: "Salas", render: v => <span className="tbl__num">{v}</span> },
+  ],
+  groups: [
+    { key: "id",           label: "#",        mono: true },
+    { key: "name",         label: "Nome" },
+    { key: "game_name",    label: "Jogo" },
+    { key: "owner",        label: "Criador" },
+    { key: "style",        label: "Estilo",   render: v => <span className={`tbl__badge tbl__badge--${v === "Competitivo" ? "comp" : "casual"}`}>{v}</span> },
+    { key: "members_count",label: "Membros",  render: (v, row) => <span className="tbl__num">{v}/{row.slots ?? row.max_slots}</span> },
+    { key: "status",       label: "Status",   render: v => <span className={`tbl__badge tbl__badge--${v === "open" ? "open" : "closed"}`}>{v === "open" ? "Aberta" : "Fechada"}</span> },
+    { key: "created_at",   label: "Criado em", render: v => <span className="tbl__date">{v}</span> },
+  ],
+  group_members: [
+    { key: "id",         label: "#",          mono: true },
+    { key: "group_id",   label: "group_id",   mono: true },
+    { key: "profile_id", label: "profile_id", mono: true },
+    { key: "nickname",   label: "Jogador" },
+    { key: "group_name", label: "Sala" },
+    { key: "role",       label: "Papel", render: v => <span className={`tbl__badge ${v === "owner" ? "tbl__badge--comp" : "tbl__badge--casual"}`}>{v === "owner" ? "👑 Dono" : "Membro"}</span> },
+    { key: "joined_at",  label: "Entrou em",  render: v => <span className="tbl__date">{v}</span> },
+  ],
+};
 
-  const handleDelete = (rowId) => {
-    setData(prev => ({ ...prev, [id]: prev[id].filter(r => r.id !== rowId) }));
-  };
+function SectionView({ id, rows, loading, onDelete, onEdit }) {
+  const [page,   setPage]   = useState(1);
+  const [search, setSearch] = useState("");
 
-  const filtered = data[id]?.filter(row =>
+  const EDITABLE = ["games", "groups", "profiles"];
+
+  const filtered = rows.filter(row =>
     Object.values(row).some(v => String(v).toLowerCase().includes(search.toLowerCase()))
-  ) ?? [];
-
+  );
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const COLS = {
-    users: [
-      { key: "id",         label: "#",          mono: true },
-      { key: "email",      label: "E-mail" },
-      { key: "created_at", label: "Criado em",  render: v => <span className="tbl__date">{v}</span> },
-    ],
-    profiles: [
-      { key: "id",                   label: "#",          mono: true },
-      { key: "user_id",              label: "user_id",    mono: true },
-      { key: "nickname",             label: "Nickname",   render: (v) => <span className="tbl__nick"><span className="tbl__nick-av">{v[0]}</span>{v}</span> },
-      { key: "schedule_availability",label: "Horário" },
-      { key: "bio",                  label: "Bio",        render: v => v ? <span className="tbl__clamp">{v}</span> : <span className="tbl__null">—</span> },
-      { key: "created_at",           label: "Criado em",  render: v => <span className="tbl__date">{v}</span> },
-    ],
-    games: [
-      { key: "id",          label: "#",        mono: true },
-      { key: "name",        label: "Nome",     render: v => <strong style={{ color: "#f1f5f9" }}>{v}</strong> },
-      { key: "genre",       label: "Gênero",   render: v => <span className="tbl__genre">{v}</span> },
-      { key: "rooms_count", label: "Salas",    render: v => <span className="tbl__num">{v}</span> },
-    ],
-    groups: [
-      { key: "id",           label: "#",         mono: true },
-      { key: "name",         label: "Nome" },
-      { key: "game_name",    label: "Jogo" },
-      { key: "owner_id",     label: "owner_id",  mono: true },
-      { key: "style",        label: "Estilo",    render: v => <span className={`tbl__badge tbl__badge--${v === "Competitivo" ? "comp" : "casual"}`}>{v}</span> },
-      { key: "members_count",label: "Membros",   render: (v, row) => <span className="tbl__num">{v}/{row.slots}</span> },
-      { key: "status",       label: "Status",    render: v => <span className={`tbl__badge tbl__badge--${v === "open" ? "open" : "closed"}`}>{v === "open" ? "Aberta" : "Fechada"}</span> },
-      { key: "created_at",   label: "Criado em", render: v => <span className="tbl__date">{v}</span> },
-    ],
-    group_members: [
-      { key: "id",       label: "#",        mono: true },
-      { key: "group_id", label: "group_id", mono: true },
-      { key: "user_id",  label: "user_id",  mono: true },
-      { key: "role",     label: "Papel",    render: v => <span className={`tbl__badge ${v === "owner" ? "tbl__badge--comp" : "tbl__badge--casual"}`}>{v === "owner" ? "👑 Dono" : "Membro"}</span> },
-      { key: "joined_at",label: "Entrou em",render: v => <span className="tbl__date">{v}</span> },
-    ],
-  };
+  if (loading) {
+    return (
+      <div style={{ textAlign: "center", color: "#475569", padding: "48px 0", fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>
+        Carregando dados...
+      </div>
+    );
+  }
 
   return (
     <div className="section-view">
@@ -306,102 +363,106 @@ function SectionView({ id, data, setData }) {
         </div>
       </div>
 
-      <Table columns={COLS[id] || []} data={paginated} onDelete={handleDelete} />
-
-      <Pagination
-        page={page}
-        total={filtered.length}
-        perPage={PER_PAGE}
-        onChange={setPage}
+      <Table
+        section={id}
+        columns={COLS[id] || []}
+        data={paginated}
+        onDelete={row => onDelete(id, row)}
+        onEdit={EDITABLE.includes(id) ? (row, fields) => onEdit(id, row, fields) : null}
       />
+
+      <Pagination page={page} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
     </div>
   );
 }
 
 // ─── OVERVIEW ─────────────────────────────────────────────────────────────────
-function Overview({ data }) {
-  const recentGroups = data.groups.slice(0, 5);
-  const recentUsers  = data.users.slice(0, 5);
+function Overview({ stats, overviewData }) {
+  const statCards = STATS_CONFIG.map(s => ({ ...s, value: stats[s.key] ?? 0 }));
+  const { recentGroups, recentUsers, games, group_members } = overviewData;
+  const maxRooms = games[0]?.rooms_count || 1;
 
   return (
     <div className="overview">
       <div className="overview__stats">
-        {STATS.map((s, i) => <StatCard key={s.label} stat={s} index={i} />)}
+        {statCards.map((s, i) => <StatCard key={s.key} stat={s} index={i} />)}
       </div>
 
       <div className="overview__grid">
-        {/* Recent groups */}
         <div className="ov-panel">
           <div className="ov-panel__title">Salas recentes</div>
           <div className="ov-list">
-            {recentGroups.map(g => (
-              <div key={g.id} className="ov-row">
-                <div className="ov-row__icon" style={{ background: g.style === "Competitivo" ? "rgba(124,58,237,.2)" : "rgba(14,165,233,.15)" }}>
-                  {g.style === "Competitivo" ? "⚔️" : "🎮"}
+            {recentGroups.length === 0
+              ? <span style={{ color: "#334155", fontSize: 12 }}>Nenhuma sala criada.</span>
+              : recentGroups.map(g => (
+                <div key={g.id} className="ov-row">
+                  <div className="ov-row__icon" style={{ background: g.style === "Competitivo" ? "rgba(124,58,237,.2)" : "rgba(14,165,233,.15)" }}>
+                    {g.style === "Competitivo" ? "⚔️" : "🎮"}
+                  </div>
+                  <div className="ov-row__info">
+                    <span className="ov-row__name">{g.name}</span>
+                    <span className="ov-row__sub">{g.game_name} · {g.members_count}/{g.slots ?? g.max_slots}</span>
+                  </div>
+                  <span className={`tbl__badge tbl__badge--${g.status === "open" ? "open" : "closed"}`} style={{ fontSize: 10 }}>
+                    {g.status === "open" ? "Aberta" : "Fechada"}
+                  </span>
                 </div>
-                <div className="ov-row__info">
-                  <span className="ov-row__name">{g.name}</span>
-                  <span className="ov-row__sub">{g.game_name} · {g.members_count}/{g.slots}</span>
-                </div>
-                <span className={`tbl__badge tbl__badge--${g.status === "open" ? "open" : "closed"}`} style={{ fontSize: 10 }}>
-                  {g.status === "open" ? "Aberta" : "Fechada"}
-                </span>
-              </div>
-            ))}
+              ))
+            }
           </div>
         </div>
 
-        {/* Recent users */}
         <div className="ov-panel">
           <div className="ov-panel__title">Usuários recentes</div>
           <div className="ov-list">
-            {recentUsers.map(u => (
-              <div key={u.id} className="ov-row">
-                <div className="ov-row__icon" style={{ background: "rgba(124,58,237,.2)", color: "#c084fc", fontSize: 12, fontWeight: 700 }}>
-                  #{u.id}
+            {recentUsers.length === 0
+              ? <span style={{ color: "#334155", fontSize: 12 }}>Nenhum usuário ainda.</span>
+              : recentUsers.map(u => (
+                <div key={u.id} className="ov-row">
+                  <div className="ov-row__icon" style={{ background: "rgba(124,58,237,.2)", color: "#c084fc", fontSize: 12, fontWeight: 700 }}>
+                    #{u.id}
+                  </div>
+                  <div className="ov-row__info">
+                    <span className="ov-row__name">{u.email}</span>
+                    <span className="ov-row__sub">Criado em {u.created_at}</span>
+                  </div>
                 </div>
-                <div className="ov-row__info">
-                  <span className="ov-row__name">{u.email}</span>
-                  <span className="ov-row__sub">Criado em {u.created_at}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            }
           </div>
         </div>
 
-        {/* Games by rooms */}
         <div className="ov-panel">
           <div className="ov-panel__title">Jogos por salas ativas</div>
           <div className="ov-bars">
-            {data.games.slice(0, 6).map(g => {
-              const max = data.games[0].rooms_count;
-              return (
+            {games.length === 0
+              ? <span style={{ color: "#334155", fontSize: 12 }}>Nenhum jogo cadastrado.</span>
+              : games.slice(0, 6).map(g => (
                 <div key={g.id} className="ov-bar-row">
                   <span className="ov-bar-label">{g.name}</span>
                   <div className="ov-bar-track">
-                    <div className="ov-bar-fill" style={{ width: `${(g.rooms_count / max) * 100}%` }} />
+                    <div className="ov-bar-fill" style={{ width: `${(g.rooms_count / maxRooms) * 100}%` }} />
                   </div>
                   <span className="ov-bar-val">{g.rooms_count}</span>
                 </div>
-              );
-            })}
+              ))
+            }
           </div>
         </div>
 
-        {/* Member roles */}
         <div className="ov-panel">
           <div className="ov-panel__title">Distribuição de papéis</div>
           <div className="ov-donut-wrap">
             <div className="ov-donut">
               <div className="ov-donut__inner">
-                <span className="ov-donut__num">{data.group_members.length}</span>
+                <span className="ov-donut__num">{group_members.length}</span>
                 <span className="ov-donut__lbl">total</span>
               </div>
             </div>
             <div className="ov-donut-legend">
               {[
-                { label: "Donos",   count: data.group_members.filter(m => m.role === "owner").length,  color: "#7c3aed" },
-                { label: "Membros", count: data.group_members.filter(m => m.role === "member").length, color: "#0ea5e9" },
+                { label: "Donos",   count: group_members.filter(m => m.role === "owner").length,  color: "#7c3aed" },
+                { label: "Membros", count: group_members.filter(m => m.role === "member").length, color: "#0ea5e9" },
               ].map(item => (
                 <div key={item.label} className="ov-legend-row">
                   <span className="ov-legend-dot" style={{ background: item.color }} />
@@ -419,18 +480,171 @@ function Overview({ data }) {
 
 // ─── ADMIN DASHBOARD ──────────────────────────────────────────────────────────
 export default function AdminDashboard() {
-  const [active,    setActive]    = useState("overview");
-  const [data,      setData]      = useState(MOCK);
-  const [sideOpen,  setSideOpen]  = useState(true);
+  const navigate   = useNavigate();
+  const { user }   = useAuth();
+  const [active,       setActive]       = useState("overview");
+  const [stats,        setStats]        = useState({ users: 0, profiles: 0, games: 0, groups: 0, group_members: 0 });
+  const [overviewData, setOverviewData] = useState({ recentGroups: [], recentUsers: [], games: [], group_members: [] });
+  const [rows,         setRows]         = useState([]);
+  const [loading,      setLoading]      = useState(false);
+  const [sideOpen,     setSideOpen]     = useState(true);
+
+  // ── Stats ────────────────────────────────────────────────────────────────────
+  const fetchStats = useCallback(() => {
+    fetch(`${API_BASE}/admin/stats`)
+      .then(r => r.json())
+      .then(res => { if (res.dados) setStats(res.dados); })
+      .catch(console.error);
+  }, []);
+
+  // ── Overview data ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchStats();
+    Promise.all([
+      fetch(`${API_BASE}/admin/groups`).then(r => r.json()),
+      fetch(`${API_BASE}/admin/users`).then(r => r.json()),
+      fetch(`${API_BASE}/games`).then(r => r.json()),
+      fetch(`${API_BASE}/admin/group-members`).then(r => r.json()),
+    ]).then(([groupsRes, usersRes, gamesRes, membersRes]) => {
+      setOverviewData({
+        recentGroups:  (groupsRes.dados  || []).slice(0, 5),
+        recentUsers:   (usersRes.dados   || []).slice(0, 5),
+        games:         Array.isArray(gamesRes) ? gamesRes : (gamesRes.dados || []),
+        group_members: membersRes.dados  || [],
+      });
+    }).catch(console.error);
+  }, [fetchStats]);
+
+  // ── Section data ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (active === "overview") return;
+    setLoading(true);
+    setRows([]);
+
+    const SECTION_URLS = {
+      users:         `${API_BASE}/admin/users`,
+      profiles:      `${API_BASE}/players?limit=500`,
+      games:         `${API_BASE}/games`,
+      groups:        `${API_BASE}/admin/groups`,
+      group_members: `${API_BASE}/admin/group-members`,
+    };
+
+    fetch(SECTION_URLS[active])
+      .then(r => r.json())
+      .then(res => {
+        const data = res.dados ?? (Array.isArray(res) ? res : []);
+        setRows(data);
+        setLoading(false);
+      })
+      .catch(err => { console.error(err); setLoading(false); });
+  }, [active]);
+
+  // ── Delete ───────────────────────────────────────────────────────────────────
+  const handleDelete = useCallback(async (sectionId, row) => {
+    const cfgMap = {
+      users:    { url: `${API_BASE}/users/${row.id}`,        headers: {} },
+      profiles: { url: `${API_BASE}/profiles/${row.id}`,     headers: {} },
+      games:    { url: `${API_BASE}/games/${row.id}`,        headers: {} },
+      groups:   { url: `${API_BASE}/game-groups/${row.id}`,  headers: { "x-profile-id": String(user?.profileId ?? "") } },
+      group_members: {
+        url: `${API_BASE}/group-members`,
+        headers: {},
+        body: JSON.stringify({ group_id: row.group_id, profile_id: row.profile_id }),
+      },
+    };
+
+    const cfg = cfgMap[sectionId];
+    if (!cfg) return;
+
+    try {
+      const res = await fetch(cfg.url, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", ...cfg.headers },
+        body: cfg.body,
+      });
+      if (res.ok) {
+        setRows(prev => prev.filter(r =>
+          sectionId === "group_members"
+            ? !(r.group_id === row.group_id && r.profile_id === row.profile_id)
+            : r.id !== row.id
+        ));
+        fetchStats();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.mensagem || "Erro ao excluir registro.");
+      }
+    } catch (err) {
+      console.error("Erro ao deletar:", err);
+      alert("Erro de conexão com a API.");
+    }
+  }, [user, fetchStats]);
+
+  // ── Edit ─────────────────────────────────────────────────────────────────────
+  const handleEdit = useCallback(async (sectionId, row, updatedFields) => {
+    const cfgMap = {
+      games: {
+        url:  `${API_BASE}/games/${row.id}`,
+        body: { name: updatedFields.name, genre_id: row.genre_id ?? 1, image_url: updatedFields.image_url || null },
+      },
+      groups: {
+        url:  `${API_BASE}/game-groups/${row.id}`,
+        body: {
+          name:        updatedFields.name,
+          bio:         updatedFields.bio || null,
+          game_style:  updatedFields.game_style || "Casual",
+          max_slots:   row.max_slots ?? row.slots ?? 5,
+          rank_min:    row.rank_min  ?? "Livre",
+          rank_max:    row.rank_max  ?? "Livre",
+          schedule:    row.schedule  ?? null,
+          mic_required: row.mic_required ?? 0,
+          tags:        row.tags      ?? null,
+        },
+      },
+      profiles: {
+        url:  `${API_BASE}/profiles/${row.id}`,
+        body: {
+          nickname:              updatedFields.nickname,
+          bio:                   updatedFields.bio || null,
+          avatar_url:            row.avatar_url            ?? null,
+          schedule_availability: row.schedule_availability ?? null,
+        },
+      },
+    };
+
+    const cfg = cfgMap[sectionId];
+    if (!cfg) return false;
+
+    try {
+      const res = await fetch(cfg.url, {
+        method:  "PUT",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(cfg.body),
+      });
+      if (res.ok) {
+        setRows(prev => prev.map(r => r.id === row.id ? { ...r, ...updatedFields } : r));
+        return true;
+      }
+      const err = await res.json().catch(() => ({}));
+      alert(err.mensagem || "Erro ao salvar.");
+    } catch (err) {
+      console.error("Erro ao editar:", err);
+      alert("Erro de conexão com a API.");
+    }
+    return false;
+  }, []);
 
   const activeSection = SECTIONS.find(s => s.id === active);
 
+  const DB_TABLES = [
+    { table: "users",         count: stats.users,         section: "users" },
+    { table: "profiles",      count: stats.profiles,      section: "profiles" },
+    { table: "games",         count: stats.games,         section: "games" },
+    { table: "groups",        count: stats.groups,        section: "groups" },
+    { table: "group_members", count: stats.group_members, section: "group_members" },
+  ];
+
   return (
     <div className="admin">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-      `}</style>
-
       {/* ── Top bar ── */}
       <header className="admin-topbar">
         <div className="admin-topbar__left">
@@ -443,10 +657,19 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="admin-topbar__right">
+          <button
+            className="btn-sec"
+            style={{ fontSize: 12, padding: "6px 12px" }}
+            onClick={() => navigate("/dashboard")}
+          >
+            ← Voltar
+          </button>
           <div className="admin-topbar__user">
-            <div className="admin-topbar__av">A</div>
+            <div className="admin-topbar__av">
+              {(user?.nickname?.[0] || "A").toUpperCase()}
+            </div>
             <div className="admin-topbar__user-info">
-              <span className="admin-topbar__nick">admin</span>
+              <span className="admin-topbar__nick">{user?.nickname || "Admin"}</span>
               <span className="admin-topbar__role">Administrador</span>
             </div>
           </div>
@@ -477,14 +700,8 @@ export default function AdminDashboard() {
                 <div className="admin-side__divider" />
                 <div className="admin-side__section-label">Banco de dados</div>
                 <div className="admin-side__db-info">
-                  {[
-                    { table: "users",         count: data.users.length },
-                    { table: "profiles",      count: data.profiles.length },
-                    { table: "games",         count: data.games.length },
-                    { table: "groups",        count: data.groups.length },
-                    { table: "group_members", count: data.group_members.length },
-                  ].map(t => (
-                    <div key={t.table} className="db-row" onClick={() => setActive(t.table === "groups" ? "groups" : t.table)}>
+                  {DB_TABLES.map(t => (
+                    <div key={t.table} className="db-row" onClick={() => setActive(t.section)}>
                       <span className="db-row__table">{t.table}</span>
                       <span className="db-row__count">{t.count}</span>
                     </div>
@@ -497,7 +714,6 @@ export default function AdminDashboard() {
 
         {/* ── Main content ── */}
         <main className="admin-main">
-          {/* Page header */}
           <div className="admin-main__header">
             <div>
               <h1 className="admin-main__title">
@@ -509,16 +725,18 @@ export default function AdminDashboard() {
                   : `Gerenciar tabela · ${active}`}
               </p>
             </div>
-            {active !== "overview" && (
-              <button className="btn-add">+ Novo registro</button>
-            )}
           </div>
 
-          {/* Content */}
           <div className="admin-main__content">
             {active === "overview"
-              ? <Overview data={data} />
-              : <SectionView id={active} data={data} setData={setData} />
+              ? <Overview stats={stats} overviewData={overviewData} />
+              : <SectionView
+                  id={active}
+                  rows={rows}
+                  loading={loading}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                />
             }
           </div>
         </main>

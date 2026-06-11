@@ -30,13 +30,14 @@ app.post("/api/login", (req, res) => {
   }
 
   const query = `
-    SELECT 
-      u.id, 
-      u.email, 
-      u.password, 
-      p.id AS profile_id, 
-      p.nickname, 
-      p.avatar_url 
+    SELECT
+      u.id,
+      u.email,
+      u.password,
+      p.id AS profile_id,
+      p.nickname,
+      p.avatar_url,
+      (SELECT 1 FROM admins a WHERE a.user_id = u.id) AS is_admin
     FROM users u
     LEFT JOIN profiles p ON p.user_id = u.id
     WHERE u.email = ?
@@ -84,6 +85,7 @@ app.post("/api/login", (req, res) => {
           email: user.email,
           nickname: user.nickname || "Jogador",
           avatar_url: user.avatar_url,
+          isAdmin: !!user.is_admin,
         },
       });
     } catch (bcryptErr) {
@@ -102,14 +104,15 @@ app.get("/api/games", (req, res) => {
     SELECT 
       g.id, 
       g.name, 
-      g.image_url AS cover_url, 
+      g.image_url AS cover_url,
       g.ranks_tags,
+      g.genre_id,
       gn.name AS genre,
       COUNT(gg.id) AS rooms_count
     FROM games g
     INNER JOIN genres gn ON g.genre_id = gn.id
     LEFT JOIN game_groups gg ON g.id = gg.game_id
-    GROUP BY g.id, g.name, g.image_url, g.ranks_tags, gn.name
+    GROUP BY g.id, g.name, g.image_url, g.ranks_tags, g.genre_id, gn.name
   `;
 
   db.all(query, [], (err, rows) => {
@@ -1323,6 +1326,84 @@ app.use((err, req, res, next) => {
     status: "erro",
     mensagem: "Erro interno do servidor. Tente novamente.",
     detalhe: process.env.NODE_ENV === "development" ? err.message : undefined,
+  });
+});
+
+// =======================================================
+// ROTAS ADMIN
+// =======================================================
+
+app.get("/api/admin/stats", (req, res) => {
+  const query = `
+    SELECT
+      (SELECT COUNT(*) FROM users) AS users,
+      (SELECT COUNT(*) FROM profiles) AS profiles,
+      (SELECT COUNT(*) FROM games) AS games,
+      (SELECT COUNT(*) FROM game_groups) AS groups,
+      (SELECT COUNT(*) FROM group_members) AS group_members
+  `;
+  db.get(query, [], (err, row) => {
+    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    res.json({ status: "sucesso", dados: row });
+  });
+});
+
+app.get("/api/admin/users", (req, res) => {
+  db.all("SELECT id, email, created_at FROM users ORDER BY id DESC", [], (err, rows) => {
+    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    res.json({ status: "sucesso", dados: rows });
+  });
+});
+
+app.get("/api/admin/groups", (req, res) => {
+  const query = `
+    SELECT
+      gg.id,
+      gg.name,
+      gg.bio,
+      gg.game_style AS style,
+      gg.max_slots,
+      gg.rank_min,
+      gg.rank_max,
+      gg.creator_id AS owner_id,
+      gg.created_at,
+      g.name AS game_name,
+      p.nickname AS owner,
+      (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = gg.id) AS members_count
+    FROM game_groups gg
+    LEFT JOIN games g ON gg.game_id = g.id
+    LEFT JOIN profiles p ON gg.creator_id = p.id
+    ORDER BY gg.id DESC
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    const formatted = rows.map(r => ({
+      ...r,
+      slots: r.max_slots,
+      status: r.members_count >= r.max_slots ? "closed" : "open",
+    }));
+    res.json({ status: "sucesso", dados: formatted });
+  });
+});
+
+app.get("/api/admin/group-members", (req, res) => {
+  const query = `
+    SELECT
+      gm.rowid AS id,
+      gm.group_id,
+      gm.profile_id,
+      gm.role,
+      gm.joined_at,
+      p.nickname,
+      gg.name AS group_name
+    FROM group_members gm
+    LEFT JOIN profiles p ON gm.profile_id = p.id
+    LEFT JOIN game_groups gg ON gm.group_id = gg.id
+    ORDER BY gm.group_id ASC
+  `;
+  db.all(query, [], (err, rows) => {
+    if (err) return res.status(500).json({ status: "erro", mensagem: err.message });
+    res.json({ status: "sucesso", dados: rows });
   });
 });
 

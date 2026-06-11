@@ -796,6 +796,38 @@
 }
 .btn-del:hover { background: rgba(239,68,68,0.28); }
 
+/* ─── EDIT MODAL FIELDS ─────────────────────────────────────────────────────── */
+.modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.modal__input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(255,255,255,0.09);
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  caret-color: #7c3aed;
+  resize: vertical;
+}
+.modal__input::placeholder { color: #334155; }
+.modal__input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .admin-side--open   { width: 56px; }
