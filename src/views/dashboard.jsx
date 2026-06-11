@@ -1,57 +1,45 @@
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../models/authContext.jsx";
 import Header from "../assets/actions/header.jsx";
 import Footer from "../assets/actions/footer.jsx";
 import "../assets/css/dashboard.css";
 
-// Dados mockados de grupos — substituir pela API quando disponível
-const MOCK_GROUPS = [
-  {
-    id: 1,
-    name: "Rumo ao Radiante",
-    game: "Valorant",
-    slots_used: 3,
-    max_slots: 5,
-    style: "competitive",
-    role: "owner",
-  },
-  {
-    id: 2,
-    name: "LoL Casual Noturno",
-    game: "League of Legends",
-    slots_used: 2,
-    max_slots: 5,
-    style: "casual",
-    role: "member",
-  },
-];
-
-function StatCard({ icon, label, value }) {
+// ── Componente: stat simples (número + label) ─────────────────────────────────
+function StatCard({ icon, label, value, loading }) {
   return (
     <div className="dash-stat">
       <span className="dash-stat__icon">{icon}</span>
       <div>
-        <p className="dash-stat__value">{value}</p>
+        <p className="dash-stat__value">{loading ? "…" : value}</p>
         <p className="dash-stat__label">{label}</p>
       </div>
     </div>
   );
 }
 
+// ── Componente: card de grupo ─────────────────────────────────────────────────
 function GroupCard({ group, onEnter }) {
   const free = group.max_slots - group.slots_used;
   return (
     <div className="dash-group-card">
-      <div className={`dash-group-stripe dash-group-stripe--${group.style}`} />
+      <div className={`dash-group-stripe dash-group-stripe--${group.style?.toLowerCase()}`} />
+
       <div className="dash-group-top">
-        <div className="dash-group-info">
-          <span className="dash-group-name">{group.name}</span>
-          <span className="dash-group-game">{group.game}</span>
+        <div className="dash-group-top-info">
+          {group.game_cover && (
+            <img src={group.game_cover} alt={group.game_name} className="dash-group-cover" />
+          )}
+          <div className="dash-group-info">
+            <span className="dash-group-name">{group.name}</span>
+            <span className="dash-group-game">{group.game_name}</span>
+          </div>
         </div>
         {group.role === "owner" && (
           <span className="dash-group-owner-badge">👑 Dono</span>
         )}
       </div>
+
       <div className="dash-group-slots">
         <div className="dash-group-slots-bar">
           <div
@@ -60,14 +48,19 @@ function GroupCard({ group, onEnter }) {
           />
         </div>
         <span className="dash-group-slots-text">
-          {group.slots_used}/{group.max_slots} membros · {free} {free === 1 ? "vaga" : "vagas"}
+          {group.slots_used}/{group.max_slots} membros · {free}{" "}
+          {free === 1 ? "vaga" : "vagas"}
         </span>
       </div>
+
       <div className="dash-group-tags">
-        <span className={`dash-group-tag dash-group-tag--${group.style}`}>
-          {group.style === "competitive" ? "Competitivo" : "Casual"}
+        <span className={`dash-group-tag dash-group-tag--${group.style?.toLowerCase()}`}>
+          {group.style === "Competitivo" || group.style === "competitive"
+            ? "Competitivo"
+            : "Casual"}
         </span>
       </div>
+
       <button className="dash-group-btn" onClick={() => onEnter(group)}>
         Entrar no grupo
       </button>
@@ -75,9 +68,74 @@ function GroupCard({ group, onEnter }) {
   );
 }
 
+// ── Componente: card de jogo vinculado com rank ───────────────────────────────
+function LinkedGameCard({ game }) {
+  return (
+    <div className="dash-game-card">
+      {game.image_url ? (
+        <img src={game.image_url} alt={game.game_name} className="dash-game-card__img" />
+      ) : (
+        <div className="dash-game-card__img-placeholder">🎮</div>
+      )}
+      <div className="dash-game-card__info">
+        <span className="dash-game-card__name">{game.game_name}</span>
+        <div className="dash-game-card__meta">
+          <span className={`dash-game-card__style dash-game-card__style--${game.game_style}`}>
+            {game.game_style === "competitive" ? "Competitivo" : "Casual"}
+          </span>
+          {game.game_rank && (
+            <span className="dash-game-card__rank">🏆 {game.game_rank}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const [profile, setProfile]       = useState(null);
+  const [groups, setGroups]         = useState([]);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingGroups, setLoadingGroups]   = useState(true);
+
+  // Busca perfil completo (inclui jogos vinculados)
+  const fetchProfile = useCallback(async () => {
+    if (!user?.id) return;
+    setLoadingProfile(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/players/${user.id}`);
+      const result = await res.json();
+      if (res.ok && result.status === "sucesso") setProfile(result.dados);
+    } catch (err) {
+      console.error("Erro ao carregar perfil:", err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, [user?.id]);
+
+  // Busca grupos em que o usuário é membro ou dono
+  const fetchGroups = useCallback(async () => {
+    if (!user?.id) return;
+    setLoadingGroups(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/profiles/${user.id}/groups`);
+      const result = await res.json();
+      if (res.ok && result.status === "sucesso") setGroups(result.dados);
+    } catch (err) {
+      console.error("Erro ao carregar grupos:", err);
+    } finally {
+      setLoadingGroups(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchProfile();
+    fetchGroups();
+  }, [fetchProfile, fetchGroups]);
 
   function getIniciais(name) {
     if (!name) return "?";
@@ -85,6 +143,14 @@ export default function Dashboard() {
     if (partes.length > 1) return (partes[0][0] + partes[1][0]).toUpperCase();
     return name.substring(0, 2).toUpperCase();
   }
+
+  function handleEnterGroup(group) {
+    navigate(`/rooms/${group.game_id}/${group.id}`);
+  }
+
+  const games        = profile?.games ?? [];
+  const avatarUrl    = profile?.avatar_url || user?.avatarUrl;
+  const nickname     = profile?.nickname   || user?.nickname || "Jogador";
 
   return (
     <div className="dash-page">
@@ -96,11 +162,11 @@ export default function Dashboard() {
         <section className="dash-hero">
           <div className="dash-hero__left">
             <div className="dash-avatar">
-              {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="avatar" className="dash-avatar-img" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" className="dash-avatar-img" />
               ) : (
                 <div className="dash-avatar-placeholder">
-                  {getIniciais(user?.nickname || user?.email)}
+                  {getIniciais(nickname)}
                 </div>
               )}
               <span className="dash-avatar-online" />
@@ -108,7 +174,7 @@ export default function Dashboard() {
             <div>
               <p className="dash-greeting">Bem-vindo de volta,</p>
               <h1 className="dash-username">
-                {user?.nickname || "Jogador"} <span className="dash-wave">👋</span>
+                {nickname} <span className="dash-wave">👋</span>
               </h1>
             </div>
           </div>
@@ -119,10 +185,50 @@ export default function Dashboard() {
 
         {/* ── Stats rápidos ── */}
         <section className="dash-stats">
-          <StatCard icon="🎮" label="Jogos vinculados" value={user?.games_count ?? "—"} />
-          <StatCard icon="👥" label="Grupos ativos" value={MOCK_GROUPS.length} />
-          <StatCard icon="🔍" label="Jogadores disponíveis" value="4" />
-          <StatCard icon="⭐" label="Rank mais alto" value={user?.top_rank ?? "—"} />
+          <StatCard
+            icon="🎮"
+            label="Jogos vinculados"
+            value={games.length}
+            loading={loadingProfile}
+          />
+          <StatCard
+            icon="👥"
+            label="Grupos ativos"
+            value={groups.length}
+            loading={loadingGroups}
+          />
+        </section>
+
+        {/* ── Jogos vinculados ── */}
+        <section className="dash-games-section">
+          <div className="dash-section-header">
+            <h2 className="dash-section-title">Meus jogos</h2>
+            <button
+              className="dash-section-link"
+              onClick={() => navigate("/meus-jogos")}
+            >
+              Gerenciar →
+            </button>
+          </div>
+
+          {loadingProfile ? (
+            <p className="dash-loading-text">Carregando jogos...</p>
+          ) : games.length === 0 ? (
+            <div className="dash-empty">
+              <span className="dash-empty-icon">🎮</span>
+              <p className="dash-empty-title">Nenhum jogo vinculado</p>
+              <p className="dash-empty-sub">Adicione seus jogos para aparecer nas buscas!</p>
+              <button className="dash-empty-btn" onClick={() => navigate("/meus-jogos")}>
+                Adicionar jogos
+              </button>
+            </div>
+          ) : (
+            <div className="dash-games-list">
+              {games.map((game, i) => (
+                <LinkedGameCard key={i} game={game} />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ── Ações rápidas ── */}
@@ -156,10 +262,14 @@ export default function Dashboard() {
         <section className="dash-groups-section">
           <div className="dash-section-header">
             <h2 className="dash-section-title">Meus grupos</h2>
-            <span className="dash-section-count">{MOCK_GROUPS.length} grupos</span>
+            {!loadingGroups && (
+              <span className="dash-section-count">{groups.length} grupos</span>
+            )}
           </div>
 
-          {MOCK_GROUPS.length === 0 ? (
+          {loadingGroups ? (
+            <p className="dash-loading-text">Carregando grupos...</p>
+          ) : groups.length === 0 ? (
             <div className="dash-empty">
               <span className="dash-empty-icon">👥</span>
               <p className="dash-empty-title">Nenhum grupo ainda</p>
@@ -170,11 +280,11 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="dash-groups-grid">
-              {MOCK_GROUPS.map((group) => (
+              {groups.map((group) => (
                 <GroupCard
                   key={group.id}
                   group={group}
-                  onEnter={(g) => console.log("Entrar no grupo:", g.name)}
+                  onEnter={handleEnterGroup}
                 />
               ))}
             </div>
