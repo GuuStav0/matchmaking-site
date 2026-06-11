@@ -6,8 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node api.js",
-    "db:reset": "curl -X POST http://localhost:3000/api/banco/resetar",
-    "db:list": "curl -X GET http://localhost:3000/api/banco/tabelas"
+    "dev": "nodemon api.js",
+    "db:seed": "node ./db/seed.js",
+    "db:reset": "node ./db/seed.js"
   },
   "keywords": [],
   "author": "",

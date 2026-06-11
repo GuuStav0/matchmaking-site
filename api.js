@@ -718,7 +718,11 @@ app.put("/api/profiles/:id", (req, res) => {
           .json({ status: "erro", mensagem: "Perfil não encontrado." });
       res.json({
         status: "sucesso",
-        mensagem: "Perfil atualizado com sucesso!",
+        mensagem: "Perfil salvo com sucesso!",
+        dados: {
+          nickname: nickname || req.body.nickname, // envia o nickname atualizado
+          avatarUrl: avatar_url || req.body.avatar_url, // envia a nova URL do avatar
+        },
       });
     },
   );
@@ -1115,14 +1119,14 @@ app.delete("/api/game-groups/:id", (req, res) => {
 
 // GET /api/players — Lista jogadores com filtros opcionais (?game=&style=)
 app.get("/api/players", (req, res) => {
-  const { game, style, rank } = req.query; // Removeu o 'hour' daqui
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 12;
+  const { game, style, rank, hour } = req.query;
+  const page   = parseInt(req.query.page)  || 1;
+  const limit  = parseInt(req.query.limit) || 12;
   const offset = (page - 1) * limit;
-
+ 
   let WHERE_CLAUSES = [];
-  let queryParams = [];
-
+  let queryParams   = [];
+ 
   if (game) {
     WHERE_CLAUSES.push("g.name LIKE ?");
     queryParams.push(`%${game}%`);
@@ -1136,27 +1140,31 @@ app.get("/api/players", (req, res) => {
     queryParams.push(rank);
   }
 
+  if (hour) {
+    WHERE_CLAUSES.push("p.schedule_availability IS NOT NULL");
+  }
+ 
   const whereStatement =
     WHERE_CLAUSES.length > 0 ? `WHERE ${WHERE_CLAUSES.join(" AND ")}` : "";
-
+ 
   const countQuery = `
-    SELECT COUNT(DISTINCT p.id) as total 
+    SELECT COUNT(DISTINCT p.id) as total
     FROM profiles p
     INNER JOIN users u ON p.user_id = u.id
     LEFT JOIN user_games ug ON p.id = ug.profile_id
     LEFT JOIN games g ON ug.game_id = g.id
     ${whereStatement}
   `;
-
+ 
   const mainQuery = `
-    SELECT 
+    SELECT
       p.id,
       p.user_id,
       p.nickname,
       p.bio,
       p.avatar_url,
       p.schedule_availability,
-      g.name AS game_name,
+      g.name       AS game_name,
       ug.game_style,
       ug.game_rank,
       u.email
@@ -1168,25 +1176,64 @@ app.get("/api/players", (req, res) => {
     GROUP BY p.id
     LIMIT ? OFFSET ?
   `;
-
+ 
+  function toMin(str) {
+    if (!str) return null;
+    const clean = str.replace("h", ":").replace("H", ":");
+    const match = clean.match(/(\d{1,2}):(\d{2})/);
+    if (!match) return null;
+    return parseInt(match[1]) * 60 + parseInt(match[2]);
+  }
+ 
+  function coversHour(scheduleStr, hourStr) {
+    if (!scheduleStr || !hourStr) return false;
+ 
+    const requestedMin = toMin(hourStr);
+    if (requestedMin === null) return false;
+ 
+    const normalised = scheduleStr.replace(/[–—]/g, "-");
+ 
+    const rangeMatch = normalised.match(/(\d{1,2}[h:]\d{0,2})\s*[-]\s*(\d{1,2}[h:]\d{0,2})/i);
+    if (!rangeMatch) {
+      // No parseable range (e.g. "Qualquer horário", "Fins de semana")
+      const lower = scheduleStr.toLowerCase();
+      return lower.includes("qualquer") || lower.includes("any");
+    }
+ 
+    const startMin = toMin(rangeMatch[1]);
+    const endMin   = toMin(rangeMatch[2]);
+    if (startMin === null || endMin === null) return true;
+ 
+    if (endMin <= startMin) {
+      return requestedMin >= startMin || requestedMin < endMin;
+    }
+ 
+    return requestedMin >= startMin && requestedMin < endMin;
+  }
+ 
   db.get(countQuery, queryParams, (countErr, countRow) => {
     if (countErr) {
-      return res
-        .status(500)
-        .json({ status: "erro", mensagem: countErr.message });
+      return res.status(500).json({ status: "erro", mensagem: countErr.message });
     }
-
+ 
     const finalParams = [...queryParams, limit, offset];
-
+ 
     db.all(mainQuery, finalParams, (err, rows) => {
       if (err) {
         return res.status(500).json({ status: "erro", mensagem: err.message });
       }
+ 
+      let filtered = rows || [];
+      if (hour) {
+        filtered = filtered.filter((p) => coversHour(p.schedule_availability, hour));
+      }
 
+      const finalTotal = hour ? filtered.length : (countRow ? countRow.total : 0);
+ 
       res.json({
         status: "sucesso",
-        dados: rows || [],
-        total: countRow ? countRow.total : 0,
+        dados: filtered,
+        total: finalTotal,
       });
     });
   });
@@ -1231,6 +1278,41 @@ app.get("/api/players/:id", (req, res) => {
       (g) => g.game_name !== null,
     );
     res.json({ status: "sucesso", dados: row });
+  });
+});
+
+// GET /api/profiles/:id/groups — Grupos em que o perfil é membro ou dono
+app.get("/api/profiles/:id/groups", (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT
+      gg.id,
+      gg.game_id,
+      gg.name,
+      gg.game_style  AS style,
+      gg.max_slots,
+      gg.creator_id,
+      g.name         AS game_name,
+      g.image_url    AS game_cover,
+      (SELECT COUNT(*) FROM group_members gm2 WHERE gm2.group_id = gg.id) AS slots_used
+    FROM group_members gm
+    INNER JOIN game_groups gg ON gm.group_id = gg.id
+    INNER JOIN games g        ON gg.game_id  = g.id
+    WHERE gm.profile_id = ?
+    ORDER BY gm.joined_at DESC
+  `;
+
+  db.all(query, [id], (err, rows) => {
+    if (err)
+      return res.status(500).json({ status: "erro", mensagem: err.message });
+
+    const groups = rows.map((row) => ({
+      ...row,
+      role: row.creator_id === Number(id) ? "owner" : "member",
+    }));
+
+    res.json({ status: "sucesso", dados: groups });
   });
 });
 
