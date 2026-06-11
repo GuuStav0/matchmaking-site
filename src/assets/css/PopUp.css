@@ -1,0 +1,88 @@
+.popup-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 320px;
+  max-width: 450px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #18181b; /* Zinc 900 */
+  border: 1px solid #27272a; /* Zinc 800 */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  animation: slideInPopup 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overflow: hidden;
+}
+
+/* Variações de borda por tipo */
+.popup-toast-container.success { border-left: 4px solid #22c55e; }
+.popup-toast-container.error { border-left: 4px solid #ef4444; }
+.popup-toast-container.info { border-left: 4px solid #3b82f6; }
+
+.popup-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.popup-content {
+  flex-grow: 1;
+}
+
+.popup-message {
+  margin: 0;
+  font-size: 14px;
+  color: #f4f4f5; /* Zinc 100 */
+  font-weight: 500;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.popup-close-btn {
+  background: none;
+  border: none;
+  color: #a1a1aa; /* Zinc 400 */
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.popup-close-btn:hover {
+  color: #f4f4f5;
+}
+
+/* Animação da barra de progresso diminuindo */
+.popup-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform-origin: left;
+  animation: popupProgress 4s linear forwards;
+}
+
+.success .popup-progress-bar { background-color: #22c55e; }
+.error .popup-progress-bar { background-color: #ef4444; }
+.info .popup-progress-bar { background-color: #3b82f6; }
+
+@keyframes slideInPopup {
+  from {
+    transform: translateX(120%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes popupProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}

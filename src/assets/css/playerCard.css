@@ -1,0 +1,289 @@
+/* ── playerCard.css — redesigned to match profile preview card aesthetic ─── */
+
+/* ── Card shell ─────────────────────────────────────────────────────────────── */
+.pc2-card {
+  background: rgba(12, 12, 22, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+  display: flex;
+  flex-direction: column;
+}
+
+.pc2-card:hover {
+  border-color: rgba(124, 58, 237, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+}
+
+/* Top accent line */
+.pc2-accent-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #6366f1);
+  z-index: 2;
+}
+
+.pc2-accent-line.pc2-tag--casual {
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8, #06b6d4);
+}
+
+.pc2-accent-line.pc2-tag--competitive {
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #6366f1);
+}
+
+/* ── Banner ──────────────────────────────────────────────────────────────────── */
+.pc2-banner {
+  height: 64px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pc2-banner--default {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(99, 102, 241, 0.18) 100%);
+}
+
+.pc2-banner--competitive {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4) 0%, rgba(139, 92, 246, 0.22) 100%);
+}
+
+.pc2-banner--casual {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.35) 0%, rgba(6, 182, 212, 0.18) 100%);
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────────── */
+.pc2-body {
+  padding: 0 1.1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ── Avatar ──────────────────────────────────────────────────────────────────── */
+.pc2-avatar-wrap {
+  margin-top: -24px;
+  margin-bottom: 0.6rem;
+  position: relative;
+  width: fit-content;
+}
+
+.pc2-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid #0c0c16;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Syne", "DM Sans", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: box-shadow 0.25s;
+}
+
+.pc2-avatar.pc2-tag--casual {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+}
+
+.pc2-card:hover .pc2-avatar {
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.3);
+}
+
+.pc2-card:hover .pc2-avatar.pc2-tag--casual {
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.3);
+}
+
+.pc2-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Style-tinted border via avatarBorderClass (kept from original) */
+img.pc2-avatar-img.avatar-border--competitive {
+  box-shadow: 0 0 0 2.5px #8b5cf6;
+}
+
+img.pc2-avatar-img.avatar-border--casual {
+  box-shadow: 0 0 0 2.5px #0ea5e9;
+}
+
+.pc2-avatar-initials {
+  font-family: "Syne", "DM Sans", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  pointer-events: none;
+}
+
+/* Online indicator */
+.pc2-online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #0c0c16;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+/* ── Text ────────────────────────────────────────────────────────────────────── */
+.pc2-nickname {
+  font-family: "Syne", "DM Sans", sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0 0 1px;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc2-game-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 0 0 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pc2-bio {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin: 0 0 0.75rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────────── */
+.pc2-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 0.7rem;
+}
+
+/* ── Tags ────────────────────────────────────────────────────────────────────── */
+.pc2-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.7rem;
+  min-height: 22px;
+}
+
+.pc2-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* Rank tag */
+.pc2-tag--rank {
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+/* Competitive tag */
+.pc2-tag--competitive {
+  background: rgba(124, 58, 237, 0.14);
+  color: #c084fc;
+  border-color: rgba(124, 58, 237, 0.28);
+}
+
+/* Casual tag */
+.pc2-tag--casual {
+  background: rgba(14, 165, 233, 0.12);
+  color: #38bdf8;
+  border-color: rgba(14, 165, 233, 0.28);
+}
+
+/* ── Meta (schedule) ─────────────────────────────────────────────────────────── */
+.pc2-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  margin-bottom: 0.85rem;
+}
+
+.pc2-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: "DM Sans", sans-serif;
+}
+
+.pc2-meta-icon {
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.pc2-meta-empty {
+  font-style: italic;
+  opacity: 0.5;
+}
+
+/* Day pills */
+.pc2-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.pc2-day-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(124, 58, 237, 0.22);
+}
+
+/* ── CTA button ──────────────────────────────────────────────────────────────── */
+.pc2-btn {
+  width: 100%;
+  padding: 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.1);
+  color: #c084fc;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  margin-top: auto;
+}
+
+.pc2-card:hover .pc2-btn {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.5);
+  transform: none;
+}

@@ -1,0 +1,624 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap");
+
+.dash-page {
+  --accent: #7c3aed;
+  --accent-glow: rgba(124, 58, 237, 0.25);
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --label: #94a3b8;
+  --card-bg: rgba(15, 15, 24, 0.92);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow: rgba(0, 0, 0, 0.5);
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #080810;
+  font-family: "DM Sans", sans-serif;
+  color: var(--text);
+  position: relative;
+}
+
+.dash-page::before {
+  content: "";
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+  top: -10%;
+  left: -5%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dash-main {
+  flex: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  box-sizing: border-box;
+}
+
+/* ── Hero ── */
+.dash-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.dash-hero__left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dash-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.dash-avatar-img,
+.dash-avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+}
+
+.dash-avatar-img {
+  object-fit: cover;
+  border: 2px solid rgba(124, 58, 237, 0.4);
+}
+
+.dash-avatar-placeholder {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  border: 2px solid rgba(124, 58, 237, 0.4);
+}
+
+.dash-avatar-online {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #080810;
+}
+
+.dash-greeting {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.dash-username {
+  font-family: "Syne", sans-serif;
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin: 0;
+}
+
+.dash-wave { font-style: normal; }
+
+.dash-edit-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border);
+  color: var(--label);
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dash-edit-btn:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  color: var(--text);
+}
+
+/* ── Stats ── */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.dash-stat {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.dash-stat:hover {
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+.dash-stat__icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.dash-stat__value {
+  font-family: "Syne", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.dash-stat__label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* ── Ações rápidas ── */
+.dash-section-title {
+  font-family: "Syne", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 1rem;
+  letter-spacing: -0.3px;
+}
+
+.dash-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.dash-action-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-family: "DM Sans", sans-serif;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.dash-action-card:hover {
+  border-color: rgba(124, 58, 237, 0.4);
+  background: rgba(124, 58, 237, 0.05);
+  transform: translateY(-1px);
+}
+
+.dash-action-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+.dash-action-label {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dash-action-arrow {
+  color: var(--muted);
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+.dash-action-card:hover .dash-action-arrow {
+  transform: translateX(3px);
+  color: #c084fc;
+}
+
+/* ── Grupos ── */
+.dash-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.dash-section-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.dash-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.dash-group-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.dash-group-card:hover {
+  border-color: rgba(124, 58, 237, 0.35);
+  transform: translateY(-2px);
+}
+
+.dash-group-stripe {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.dash-group-stripe--competitive {
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+}
+
+.dash-group-stripe--casual {
+  background: linear-gradient(90deg, #0ea5e9, #22d3ee);
+}
+
+.dash-group-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dash-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dash-group-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dash-group-game {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.dash-group-owner-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(234, 179, 8, 0.12);
+  color: #fbbf24;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dash-group-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dash-group-slots-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dash-group-slots-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.dash-group-slots-text {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.dash-group-tags {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dash-group-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.dash-group-tag--competitive {
+  background: rgba(124, 58, 237, 0.15);
+  color: #c084fc;
+}
+
+.dash-group-tag--casual {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+}
+
+.dash-group-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.08);
+  color: #c084fc;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-group-btn:hover {
+  background: rgba(124, 58, 237, 0.18);
+  border-color: rgba(124, 58, 237, 0.5);
+}
+
+/* ── Empty state ── */
+.dash-empty {
+  background: var(--card-bg);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 3rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dash-empty-icon { font-size: 2.5rem; }
+
+.dash-empty-title {
+  font-family: "Syne", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.dash-empty-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.dash-empty-btn {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.dash-empty-btn:hover { opacity: 0.85; }
+
+/* ── Responsivo ── */
+@media (max-width: 600px) {
+  .dash-hero { flex-direction: column; align-items: flex-start; }
+  .dash-stats { grid-template-columns: 1fr 1fr; }
+  .dash-actions { grid-template-columns: 1fr; }
+  .dash-groups-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Cole estes blocos no seu dashboard.css existente ─── */
+
+/* Texto de carregamento genérico */
+.dash-loading-text {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 0.5rem 0;
+}
+
+/* Link de seção (ex: "Gerenciar →") */
+.dash-section-link {
+  background: transparent;
+  border: none;
+  color: rgba(192, 132, 252, 0.8);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+.dash-section-link:hover { color: #c084fc; }
+
+/* ── Lista de jogos vinculados ── */
+.dash-games-section { margin-bottom: 2rem; }
+
+.dash-games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dash-game-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  transition: border-color 0.2s;
+}
+.dash-game-card:hover { border-color: rgba(192, 132, 252, 0.3); }
+
+.dash-game-card__img {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dash-game-card__img-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.dash-game-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.dash-game-card__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-game-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.dash-game-card__style {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.dash-game-card__style--competitive {
+  background: rgba(250, 204, 21, 0.12);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.25);
+}
+.dash-game-card__style--casual {
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.25);
+}
+.dash-game-card__rank {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── Imagem miniatura do jogo no card de grupo ── */
+.dash-group-cover {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.dash-group-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+/* ── Carrossel de grupos ── */
+.dash-groups-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dash-carousel-btns {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.dash-carousel-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.08);
+  color: #c084fc;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.dash-carousel-btn:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.6);
+}
+
+.dash-carousel-btn--disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dash-groups-carousel {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+}
+
+.dash-groups-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.dash-groups-carousel .dash-group-card {
+  flex: 0 0 280px;
+  scroll-snap-align: start;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .dash-groups-carousel .dash-group-card {
+    flex: 0 0 calc(100% - 1px);
+  }
+}
