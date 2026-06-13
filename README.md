@@ -44,6 +44,7 @@ npm install
 ```
 
 ### ⚡ Inicialização da API (`npm run start`)
+A API se encontra na Branch system-api do repositório
 
 O comando `npm run start` é o ponto de entrada principal do ciclo de vida da aplicação. Ele é responsável por colocar o servidor Express online e garantir que toda a infraestrutura e conexão com o banco de dados SQLite estejam prontas para o uso.
 
